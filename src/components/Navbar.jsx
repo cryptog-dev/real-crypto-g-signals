@@ -1,16 +1,12 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-scroll";
-import { ThemeContext } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { Menu, X, Sun, Moon, User, LogOut, Crown } from "lucide-react";
+import { Menu, X, User, LogOut, Crown } from "lucide-react";
 import Logo from "../assets/logo3.png";
-import AuthModal from "../AuthModal";
 
 const Navbar = ({ isAppView = false, activeTab = null }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const { darkMode, toggleTheme } = useContext(ThemeContext);
   const { user, logout, isAdmin, isPremium } = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -67,11 +63,7 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        isAppView
-          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-md"
-          : scrolled
-          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-md"
-          : "bg-transparent"
+        isAppView || scrolled ? "bg-gray-900/90 backdrop-blur-md shadow-md" : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -121,7 +113,7 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
                       smooth={true}
                       offset={-70}
                       duration={500}
-                      className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium cursor-pointer transition-colors"
+                      className="text-gray-300 hover:text-green-400 font-medium cursor-pointer transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -130,8 +122,8 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
                       onClick={() => handleNavClick(link)}
                       className={`font-medium cursor-pointer transition-colors ${
                         activeTab === link.to
-                          ? "text-green-600 dark:text-green-400"
-                          : "text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400"
+                          ? "text-green-400"
+                          : "text-gray-300 hover:text-green-400"
                       }`}
                     >
                       {link.name}
@@ -139,19 +131,8 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
                   )}
                 </div>
               ))}
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Toggle theme"
-              >
-                {darkMode ? (
-                  <Sun className="text-amber-400 h-5 w-5" />
-                ) : (
-                  <Moon className="text-gray-700 h-5 w-5" />
-                )}
-              </button>
 
-              {user ? (
+              {user && (
                 <div className="flex items-center space-x-3">
                   {isPremium() && (
                     <div className="flex items-center text-yellow-600 dark:text-yellow-400">
@@ -176,30 +157,12 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-md font-medium transition-all hover:shadow-lg"
-                >
-                  Login
-                </button>
               )}
             </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center space-x-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {darkMode ? (
-                <Sun className="text-amber-400 h-5 w-5" />
-              ) : (
-                <Moon className="text-gray-700 h-5 w-5" />
-              )}
-            </button>
+          <div className="flex md:hidden items-center">
             <button
               onClick={toggleMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -218,18 +181,17 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
 
       {/* Mobile menu */}
       <div className={`md:hidden ${isOpen ? "block" : "hidden"}`}>
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 shadow-lg">
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-900 shadow-lg">
           {navLinks.map((link) => (
-            <div key={link.name}>
+            <div key={link.name} className="py-2">
               {link.isLink ? (
                 <Link
-                  activeClass="text-green-600 dark:text-green-400"
                   to={link.to}
                   spy={true}
                   smooth={true}
                   offset={-70}
                   duration={500}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  className="block px-3 py-2 text-gray-300 hover:text-green-400 font-medium rounded-md transition-colors"
                   onClick={toggleMenu}
                 >
                   {link.name}
@@ -237,10 +199,10 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
               ) : (
                 <button
                   onClick={() => handleNavClick(link)}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  className={`block w-full text-left px-3 py-2 rounded-md font-medium transition-colors ${
                     activeTab === link.to
-                      ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900"
-                      : "text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                      ? "text-green-400"
+                      : "text-gray-300 hover:text-green-400"
                   }`}
                 >
                   {link.name}
@@ -248,13 +210,15 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
               )}
             </div>
           ))}
-          {user ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
-                <User size={16} />
-                <span>{user.username}</span>
+          {user && (
+            <div className="space-y-2 pt-2 border-t border-gray-800">
+              <div className="flex items-center space-x-2 px-3 py-2">
+                <User className="h-5 w-5 text-gray-400" />
+                <span className="text-sm font-medium text-gray-300">
+                  {user.username}
+                </span>
                 {isPremium() && (
-                  <div className="flex items-center text-yellow-600 dark:text-yellow-400">
+                  <div className="flex items-center text-yellow-400">
                     <Crown size={14} className="mr-1" />
                     <span className="text-xs">Premium</span>
                   </div>
@@ -262,29 +226,14 @@ const Navbar = ({ isAppView = false, activeTab = null }) => {
               </div>
               <button
                 onClick={logout}
-                className="block w-full text-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md font-medium transition-all"
+                className="block w-full text-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
               >
                 Logout
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="block w-full text-center bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-md font-medium transition-all mt-3"
-            >
-              Login
-            </button>
           )}
         </div>
       </div>
-
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-        />
-      )}
     </nav>
   );
 };
