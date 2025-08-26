@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-scroll";
 import { Mail } from "lucide-react";
 import { FaTwitter, FaInstagram, FaTelegram } from "react-icons/fa";
+import { SOCIAL_LINKS, CONTACT_EMAIL } from "../constants";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -16,17 +17,17 @@ const Footer = () => {
   const socialLinks = [
     {
       icon: <FaTwitter className="h-5 w-5" />,
-      href: "https://x.com/T_Cryptog",
+      href: SOCIAL_LINKS.TWITTER,
       name: "Twitter",  
     },
     {
       icon: <FaInstagram className="h-5 w-5" />,
-      href: "https://www.instagram.com/therealcrypto_g/",
+      href: SOCIAL_LINKS.INSTAGRAM,
       name: "Instagram",
     },
     {
       icon: <FaTelegram className="h-5 w-5" />,
-      href: "https://t.me/therealcryptog_official#",
+      href: SOCIAL_LINKS.TELEGRAM,
       name: "Telegram",
     },
   ];
@@ -94,7 +95,7 @@ const Footer = () => {
             <div className="space-y-3">
               <p className="flex items-center text-gray-400">
                 <Mail className="h-5 w-5 mr-2 text-green-400" />
-                therealcryptog.official@gmail.com
+                {CONTACT_EMAIL}
               </p>
               <p className="text-gray-400">
                 Join our Telegram channel for the fastest support and updates.

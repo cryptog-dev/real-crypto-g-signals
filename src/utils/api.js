@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_BASE_URL = "http://localhost:8000/api";
+import { API_BASE_URL, STORAGE_KEYS } from "../constants";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -13,7 +12,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,7 +33,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
+        const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
         if (refreshToken) {
           const response = await axios.post(
             `${API_BASE_URL}/auth/token/refresh/`,
@@ -43,15 +42,15 @@ api.interceptors.response.use(
             }
           );
 
-          localStorage.setItem("access_token", response.data.access);
+          localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.access);
           originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
 
           return api(originalRequest);
         }
       } catch (refreshError) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
         window.location.href = "/";
       }
     }

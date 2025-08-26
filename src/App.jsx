@@ -1,11 +1,14 @@
 import React, { useState, useContext, useEffect } from "react";
 import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProductApp from "./ProductApp";
 import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Github, Twitter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { validateEmail, validatePassword, validateUsername } from "./utils/validation";
+import { formatDate } from "./utils/formatters";
 import "./index.css";
 
 const AppContent = () => {
@@ -550,11 +553,13 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ThemeProvider>
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  </ThemeProvider>
+  <ErrorBoundary>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

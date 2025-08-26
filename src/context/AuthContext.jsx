@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authAPI } from "../utils/api";
+import { STORAGE_KEYS, USER_ROLES } from "../constants";
 
 const AuthContext = createContext();
 
@@ -17,8 +18,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in on app start
-    const token = localStorage.getItem("access_token");
-    const userData = localStorage.getItem("user");
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    const userData = localStorage.getItem(STORAGE_KEYS.USER);
 
     if (token && userData) {
       try {
@@ -27,9 +28,9 @@ export const AuthProvider = ({ children }) => {
         fetchUserInfo();
       } catch (error) {
         console.error("Error parsing user data:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       }
     }
     setLoading(false);
@@ -40,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.getUserInfo();
       const userData = response.data;
       setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
     } catch (error) {
       console.error("Error fetching user info:", error);
       // If token is invalid, clear user data
@@ -55,14 +56,14 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(credentials);
       const { access, refresh } = response.data;
 
-      localStorage.setItem("access_token", access);
-      localStorage.setItem("refresh_token", refresh);
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh);
 
       // Fetch user info from server to get actual role
       const userInfoResponse = await authAPI.getUserInfo();
       const userData = userInfoResponse.data;
 
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       setUser(userData);
 
       return { success: true };
@@ -87,15 +88,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
     setUser(null);
   };
 
-  const isAdmin = () => user?.role === "admin";
-  const isPremium = () => user?.role === "premium";
-  const isFree = () => user?.role === "free";
+  const isAdmin = () => user?.role === USER_ROLES.ADMIN;
+  const isPremium = () => user?.role === USER_ROLES.PREMIUM;
+  const isFree = () => user?.role === USER_ROLES.FREE;
 
   const value = {
     user,
