@@ -1,14 +1,13 @@
 import React, { useState, useContext } from "react";
 import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import ErrorBoundary from "./components/ui/ErrorBoundary";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProductApp from "./ProductApp";
 import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Twitter } from "lucide-react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
-import "./index.css";
 
 const AppContent = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -476,7 +475,7 @@ const AppContent = () => {
                 </button>
               </motion.div>
                             {/* Social Login Buttons */}
-              <motion.div 
+              {/* <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
@@ -514,7 +513,7 @@ const AppContent = () => {
                     <span className="ml-2 hidden sm:inline">Twitter</span>
                   </motion.button>
                 </div>
-              </motion.div>
+              </motion.div> */}
 
 
               {/* Toggle between Login/Register */}
@@ -558,13 +557,11 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
+  <ThemeProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 export default App;

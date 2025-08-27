@@ -246,39 +246,52 @@ const ProductApp = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mb-12">
-          <nav className="flex justify-center space-x-8">
-            {[
-              { id: "dashboard", name: "Dashboard", icon: Home },
-              { id: "signals", name: "Trading Signals", icon: Signal },
-              { id: "blogs", name: "Market Analysis", icon: BookOpen },
-              { id: "charts", name: "Charts", icon: BarChart },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-3 px-6 py-3 rounded-xl text-base font-medium transition-all duration-300 transform hover:scale-105 ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50 backdrop-blur-sm"
-                }`}
-              >
-                <tab.icon size={20} />
-                <span>{tab.name}</span>
-              </button>
-            ))}
-          </nav>
+        <div className="mb-8 md:mb-12 px-2 md:px-0">
+          <div className="overflow-x-auto pb-2">
+            <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
+              {[
+                { id: "dashboard", name: "Dashboard", icon: Home },
+                { id: "signals", name: "Signals", icon: Signal },
+                { id: "blogs", name: "Analysis", icon: BookOpen },
+                { id: "charts", name: "Charts", icon: BarChart },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm md:text-base font-medium transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-700/50 backdrop-blur-sm"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="whitespace-nowrap">{tab.id === 'dashboard' ? 'Home' : tab.name}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             <DashboardStats signals={signals} blogs={blogs} />
-            {isAdmin() && <AdminControls handleCreate={handleCreate} />}
-            {!isAdmin() && <UserFeatures />}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
-              <RecentBlogs blogs={blogs} formatDate={formatDate} />
+            {isAdmin() ? (
+              <div className="px-2 md:px-0">
+                <AdminControls handleCreate={handleCreate} />
+              </div>
+            ) : (
+              <div className="px-2 md:px-0">
+                <UserFeatures />
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 px-2 md:px-0">
+              <div className="w-full">
+                <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
+              </div>
+              <div className="w-full">
+                <RecentBlogs blogs={blogs} formatDate={formatDate} />
+              </div>
             </div>
           </div>
         )}
