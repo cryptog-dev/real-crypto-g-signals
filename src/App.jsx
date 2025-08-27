@@ -1,14 +1,13 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProductApp from "./ProductApp";
-import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Github, Twitter } from "lucide-react";
+import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Twitter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { validateEmail, validatePassword, validateUsername } from "./utils/validation";
-import { formatDate } from "./utils/formatters";
+import { FcGoogle } from "react-icons/fc";
 import "./index.css";
 
 const AppContent = () => {
@@ -178,7 +177,7 @@ const AppContent = () => {
   if (user) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Navbar isAppView={true} />
+        <Navbar />
         <main className="flex-grow">
           <ProductApp />
         </main>
@@ -187,34 +186,41 @@ const AppContent = () => {
     );
   }
 
-  // Show the login page if user is not authenticated
+  // Show login/signup form if user is not authenticated
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <Navbar isAppView={false} />
-      <main className="flex-grow flex items-center justify-center p-4 pt-24 md:pt-28">
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      <main className="flex-grow flex items-start md:items-center justify-center p-4 overflow-y-auto">
         <motion.div 
+          className="w-full max-w-md mx-auto my-4 md:my-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          style={{
+            maxHeight: 'calc(100vh - 2rem)',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none', // Hide scrollbar for Firefox
+            msOverflowStyle: 'none', // Hide scrollbar for IE/Edge
+          }}
         >
           <form 
             onSubmit={handleSubmit} 
-            className={`p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} transition-all duration-300 hover:shadow-xl`}
-          >
+            className={`p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} transition-all duration-300 hover:shadow-xl`}
+            >
             <div className="text-center mb-8">
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-2">
-                  {isLogin ? 'Welcome Back' : 'Create an Account'}
+                <h1 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
+                  {isLogin ? "Welcome Back!" : "Create Account"}
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400">
                   {isLogin ? 'Sign in to continue to Crypto Signals' : 'Join us to get started'}
                 </p>
               </motion.div>
+              
             </div>
             
             <AnimatePresence>
@@ -447,6 +453,8 @@ const AppContent = () => {
                 </motion.div>
               )}
 
+
+
               {/* Submit Button */}
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
@@ -457,59 +465,57 @@ const AppContent = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-70 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+                  className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-yellow-500/20"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
                       <span>{isLogin ? 'Signing in...' : 'Creating account...'}</span>
                     </>
-                  ) : (
-                    <span className="font-semibold">
-                      {isLogin ? 'Sign In' : 'Create Account'}
-                    </span>
-                  )}
+                  ) : isLogin ? "Sign In" : "Create Account"}
                 </button>
               </motion.div>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              {/* Social Login Buttons */}
+                            {/* Social Login Buttons */}
               <motion.div 
-                className="grid grid-cols-2 gap-3"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
+                className="mt-6"
               >
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.84 9.49.5.09.682-.218.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.528 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.94 0-1.091.39-1.984 1.029-2.683-.103-.254-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.025A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.393.1 2.647.64.7 1.028 1.592 1.028 2.683 0 3.842-2.34 4.683-4.566 4.93.36.31.68.919.68 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C17.14 18.16 20 14.42 20 10c0-5.523-4.477-10-10-10z" clipRule="evenodd" />
-                  </svg>
-                  <span className="ml-2">GitHub</span>
-                </button>
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.84 9.49.5.09.682-.218.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.528 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.94 0-1.091.39-1.984 1.029-2.683-.103-.254-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.025A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.393.1 2.647.64.7 1.028 1.592 1.028 2.683 0 3.842-2.34 4.683-4.566 4.93.36.31.68.919.68 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C17.14 18.16 20 14.42 20 10c0-5.523-4.477-10-10-10z" clipRule="evenodd" />
-                  </svg>
-                  <span className="ml-2">Google</span>
-                </button>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                      Or sign in with
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-4">
+                  <motion.button
+                    type="button"
+                    className="flex-1 flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    whileHover={{ y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <FcGoogle className="h-5 w-5" />
+                    <span className="ml-2 hidden sm:inline">Google</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    type="button"
+                    className="flex-1 flex items-center justify-center px-4 py-2.5 border border-blue-500 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    whileHover={{ y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Twitter className="h-5 w-5 text-white" />
+                    <span className="ml-2 hidden sm:inline">Twitter</span>
+                  </motion.button>
+                </div>
               </motion.div>
+
 
               {/* Toggle between Login/Register */}
               <motion.div 
@@ -547,7 +553,6 @@ const AppContent = () => {
           </form>
         </motion.div>
       </main>
-      <Footer />
     </div>
   );
 };
