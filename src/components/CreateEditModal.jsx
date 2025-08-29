@@ -32,33 +32,33 @@ const CreateEditModal = ({
   if (!show) return null;
 
   const labelClass =
-    "flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2";
+    "flex items-center gap-2 text-sm font-semibold text-charcoal dark:text-champagne-300 mb-2 font-heading";
   const inputClass =
-    "w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200";
+    "w-full px-4 py-3 border border-champagne-300 dark:border-forest-green-600 rounded-luxury focus:outline-none focus:ring-2 focus:ring-rich-gold-500 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-50 transition-all duration-300 font-body";
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-[100] p-4 overflow-y-auto pt-20">
+    <div className="fixed inset-0 bg-forest-green-900/60 backdrop-blur-luxury flex items-start justify-center z-[100] p-4 overflow-y-auto pt-20">
       <div
         className={`relative w-full max-w-3xl ${
-          darkMode ? "bg-gray-800/95" : "bg-white/95"
-        } backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-6rem)] overflow-y-auto`}
+          darkMode ? "bg-forest-green-800/95" : "bg-white/95"
+        } backdrop-blur-luxury rounded-luxury shadow-luxury p-8 border border-champagne-200 dark:border-forest-green-700 max-h-[calc(100vh-6rem)] overflow-y-auto`}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          className="absolute top-4 right-4 p-2 text-charcoal/50 hover:text-warning-red hover:bg-champagne-100 dark:hover:bg-forest-green-700 rounded-full transition-all duration-200"
         >
           <FaTimes size={18} />
         </button>
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center justify-center gap-2">
+          <h2 className="text-3xl font-bold text-charcoal dark:text-champagne-100 flex items-center justify-center gap-2 font-heading">
             {editingItem ? <FaSave /> : <FaPlusCircle />}
             {editingItem ? "Edit" : "Create"}{" "}
             {modalType === "blog" ? "Blog" : "Signal"}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-charcoal/70 dark:text-champagne-400 font-body">
             {editingItem ? "Update the details below" : "Fill in the details below"}
           </p>
         </div>
@@ -111,7 +111,7 @@ const CreateEditModal = ({
         reader.readAsDataURL(file);
       }
     }}
-    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400"
+    className="w-full px-4 py-2 border border-champagne-300 dark:border-forest-green-600 rounded-luxury focus:outline-none focus:ring-2 focus:ring-rich-gold-500 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-50 transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-luxury file:border-0 file:text-sm file:font-semibold file:bg-champagne-50 file:text-forest-green-700 hover:file:bg-champagne-100 dark:file:bg-forest-green-900/20 dark:file:text-rich-gold-400 font-body"
   />
 
   {/* Preview */}
@@ -120,7 +120,7 @@ const CreateEditModal = ({
       <img
         src={formData.image}
         alt="Preview"
-        className="w-full max-h-48 object-contain rounded-lg shadow-md border border-gray-200 dark:border-gray-600"
+        className="w-full max-h-48 object-contain rounded-luxury shadow-luxury border border-champagne-200 dark:border-forest-green-600"
       />
     </div>
   )}
@@ -186,7 +186,7 @@ const CreateEditModal = ({
       onChange={(e) =>
         setFormData({ ...formData, leverage: Number(e.target.value) })
       }
-      className="w-full accent-green-500"
+      className="w-full accent-rich-gold-500"
     />
 
     {/* Number Input */}
@@ -200,14 +200,14 @@ const CreateEditModal = ({
           let val = Math.max(1, Math.min(125, Number(e.target.value) || 1));
           setFormData({ ...formData, leverage: val });
         }}
-        className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+        className="w-20 px-3 py-2 border border-champagne-300 dark:border-forest-green-600 rounded-luxury focus:outline-none focus:ring-2 focus:ring-rich-gold-500 dark:bg-forest-green-800/50 dark:text-champagne-50 font-mono"
       />
-      <span className="font-semibold text-gray-600 dark:text-gray-300">x</span>
+      <span className="font-semibold text-charcoal/70 dark:text-champagne-300 font-heading">x</span>
     </div>
   </div>
 
   {/* Range hint */}
-  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+  <div className="flex justify-between text-xs text-charcoal/60 dark:text-champagne-400 mt-1 font-body">
     <span>1x</span>
     <span>125x</span>
   </div>
@@ -269,7 +269,7 @@ const CreateEditModal = ({
           <div className="flex justify-end mt-6">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-rich-gold-500 to-rich-gold-600 hover:from-rich-gold-600 hover:to-rich-gold-700 text-charcoal rounded-luxury font-medium transition-all duration-300 hover:shadow-gold transform hover:scale-105 border border-forest-green-400/20 font-heading"
             >
               {editingItem ? <FaSave /> : <FaPlusCircle />}
               {editingItem ? "Save Changes" : "Create"}

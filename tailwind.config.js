@@ -49,6 +49,8 @@ export default {
           800: '#9a7530',
           900: '#7d5f28',
         },
+        'charcoal': '#2D3748',
+        'light-gray': '#F7FAFC',
         'success-green': '#48BB78',
         'warning-red': '#F56565',
       },

@@ -187,7 +187,7 @@ const AppContent = () => {
 
   // Show login/signup form if user is not authenticated
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'dark bg-gradient-to-br from-gray-900 via-forest-green-900 to-gray-900' : 'bg-gradient-to-br from-champagne-50 via-white to-champagne-100'}`}>
       <main className="flex-grow flex items-start md:items-center justify-center p-4 overflow-y-auto">
         <motion.div 
           className="w-full max-w-md mx-auto my-4 md:my-0"
@@ -204,7 +204,7 @@ const AppContent = () => {
         >
           <form 
             onSubmit={handleSubmit} 
-            className={`p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} transition-all duration-300 hover:shadow-xl`}
+            className={`p-4 sm:p-6 md:p-8 rounded-luxury shadow-luxury ${darkMode ? 'bg-gray-800/95 backdrop-blur-luxury border-rich-gold-600/20' : 'bg-white/95 backdrop-blur-luxury border-champagne-300'} border-2 transition-all duration-300 hover:shadow-gold`}
             >
             <div className="text-center mb-8">
               <motion.div 
@@ -212,10 +212,10 @@ const AppContent = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
-                <h1 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-heading font-bold mb-6 text-center bg-gradient-to-r from-rich-gold-500 via-rich-gold-400 to-rich-gold-600 bg-clip-text text-transparent">
                   {isLogin ? "Welcome Back!" : "Create Account"}
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-champagne-200 font-body">
                   {isLogin ? 'Sign in to continue to Crypto Signals' : 'Join us to get started'}
                 </p>
               </motion.div>
@@ -228,10 +228,10 @@ const AppContent = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-md flex items-start text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-200"
+                  className="mb-6 p-4 bg-red-50 border-l-4 border-warning-red rounded-luxury flex items-start text-red-700 dark:bg-red-900/30 dark:border-warning-red dark:text-red-200 shadow-sm"
                 >
                   <AlertCircle className="flex-shrink-0 h-5 w-5 mr-2 mt-0.5" />
-                  <span className="text-sm">{error}</span>
+                  <span className="text-sm font-body">{error}</span>
                 </motion.div>
               )}
               
@@ -240,10 +240,10 @@ const AppContent = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mb-6 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-md flex items-start text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-200"
+                  className="mb-6 p-4 bg-green-50 border-l-4 border-success-green rounded-luxury flex items-start text-green-700 dark:bg-green-900/30 dark:border-success-green dark:text-green-200 shadow-sm"
                 >
                   <Check className="flex-shrink-0 h-5 w-5 mr-2 mt-0.5" />
-                  <span className="text-sm">{success}</span>
+                  <span className="text-sm font-body">{success}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -257,7 +257,7 @@ const AppContent = () => {
               >
                 <label 
                   htmlFor="username"
-                  className={`block text-sm font-medium mb-1.5 ${formErrors.username ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}
+                  className={`block text-sm font-heading font-medium mb-1.5 ${formErrors.username ? 'text-warning-red' : 'text-charcoal dark:text-champagne-200'}`}
                 >
                   Username {formErrors.username && `- ${formErrors.username}`}
                 </label>
@@ -272,7 +272,7 @@ const AppContent = () => {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-3 py-2.5 text-sm border ${formErrors.username ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200`}
+                    className={`w-full pl-10 pr-3 py-3 text-sm font-body border-2 ${formErrors.username ? 'border-warning-red focus:ring-warning-red' : 'border-champagne-300 dark:border-forest-green-700 focus:ring-rich-gold-500 focus:border-rich-gold-500'} rounded-luxury focus:outline-none focus:ring-2 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-100 transition-all duration-300 backdrop-blur-sm`}
                     required
                     disabled={loading}
                     placeholder="Enter your username"
@@ -291,7 +291,7 @@ const AppContent = () => {
                 >
                   <label 
                     htmlFor="email"
-                    className={`block text-sm font-medium mb-1.5 ${formErrors.email ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}
+                    className={`block text-sm font-heading font-medium mb-1.5 ${formErrors.email ? 'text-warning-red' : 'text-charcoal dark:text-champagne-200'}`}
                   >
                     Email {formErrors.email && `- ${formErrors.email}`}
                   </label>
@@ -306,7 +306,7 @@ const AppContent = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-3 py-2.5 text-sm border ${formErrors.email ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200`}
+                      className={`w-full pl-10 pr-3 py-3 text-sm font-body border-2 ${formErrors.email ? 'border-warning-red focus:ring-warning-red' : 'border-champagne-300 dark:border-forest-green-700 focus:ring-rich-gold-500 focus:border-rich-gold-500'} rounded-luxury focus:outline-none focus:ring-2 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-100 transition-all duration-300 backdrop-blur-sm`}
                       required={!isLogin}
                       disabled={loading}
                       placeholder="Enter your email"
@@ -325,7 +325,7 @@ const AppContent = () => {
               >
                 <label 
                   htmlFor="password"
-                  className={`block text-sm font-medium mb-1.5 ${formErrors.password ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}
+                  className={`block text-sm font-heading font-medium mb-1.5 ${formErrors.password ? 'text-warning-red' : 'text-charcoal dark:text-champagne-200'}`}
                 >
                   Password {formErrors.password && `- ${formErrors.password}`}
                 </label>
@@ -340,7 +340,7 @@ const AppContent = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-10 py-2.5 text-sm border ${formErrors.password ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200`}
+                    className={`w-full pl-10 pr-10 py-3 text-sm font-body border-2 ${formErrors.password ? 'border-warning-red focus:ring-warning-red' : 'border-champagne-300 dark:border-forest-green-700 focus:ring-rich-gold-500 focus:border-rich-gold-500'} rounded-luxury focus:outline-none focus:ring-2 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-100 transition-all duration-300 backdrop-blur-sm`}
                     required
                     disabled={loading}
                     placeholder={isLogin ? "Enter your password" : "Create a password"}
@@ -373,14 +373,14 @@ const AppContent = () => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
                       <div 
-                        className={`h-1.5 rounded-full ${
-                          passwordStrength <= 1 ? 'bg-red-500' : 
-                          passwordStrength <= 3 ? 'bg-yellow-500' : 'bg-green-500'
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          passwordStrength <= 1 ? 'bg-warning-red' : 
+                          passwordStrength <= 3 ? 'bg-rich-gold-500' : 'bg-success-green'
                         }`} 
                         style={{ width: `${(passwordStrength / 5) * 100}%` }}
                       />
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs font-body text-gray-500 dark:text-champagne-300">
                       Use 8+ characters with a mix of letters, numbers & symbols
                     </p>
                   </div>
@@ -396,7 +396,7 @@ const AppContent = () => {
                 >
                   <label 
                     htmlFor="confirmPassword"
-                    className={`block text-sm font-medium mb-1.5 ${formErrors.confirmPassword ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}
+                    className={`block text-sm font-heading font-medium mb-1.5 ${formErrors.confirmPassword ? 'text-warning-red' : 'text-charcoal dark:text-champagne-200'}`}
                   >
                     Confirm Password {formErrors.confirmPassword && `- ${formErrors.confirmPassword}`}
                   </label>
@@ -411,7 +411,7 @@ const AppContent = () => {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-10 py-2.5 text-sm border ${formErrors.confirmPassword ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200`}
+                      className={`w-full pl-10 pr-10 py-3 text-sm font-body border-2 ${formErrors.confirmPassword ? 'border-warning-red focus:ring-warning-red' : 'border-champagne-300 dark:border-forest-green-700 focus:ring-rich-gold-500 focus:border-rich-gold-500'} rounded-luxury focus:outline-none focus:ring-2 focus:border-transparent dark:bg-forest-green-800/50 dark:text-champagne-100 transition-all duration-300 backdrop-blur-sm`}
                       required={!isLogin}
                       disabled={loading}
                       placeholder="Confirm your password"
@@ -434,15 +434,15 @@ const AppContent = () => {
                     <div className="mt-1 flex items-center">
                       {formData.password === formData.confirmPassword ? (
                         <>
-                          <Check className="h-4 w-4 text-green-500 mr-1" />
-                          <span className="text-xs text-green-600 dark:text-green-400">
+                          <Check className="h-4 w-4 text-success-green mr-1" />
+                          <span className="text-xs font-body text-success-green dark:text-success-green">
                             Passwords match
                           </span>
                         </>
                       ) : formData.confirmPassword ? (
                         <>
-                          <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                          <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                          <AlertCircle className="h-4 w-4 text-rich-gold-500 mr-1" />
+                          <span className="text-xs font-body text-rich-gold-600 dark:text-rich-gold-400">
                             Passwords don't match
                           </span>
                         </>
@@ -464,12 +464,12 @@ const AppContent = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-yellow-500/20"
+                  className="w-full bg-gradient-to-r from-forest-green-600 to-forest-green-700 text-white py-3 px-4 rounded-luxury font-heading font-semibold hover:from-forest-green-700 hover:to-forest-green-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-forest hover:shadow-gold transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
-                      <span>{isLogin ? 'Signing in...' : 'Creating account...'}</span>
+                      <span className="font-body">{isLogin ? 'Signing in...' : 'Creating account...'}</span>
                     </>
                   ) : isLogin ? "Sign In" : "Create Account"}
                 </button>
@@ -518,12 +518,12 @@ const AppContent = () => {
 
               {/* Toggle between Login/Register */}
               <motion.div 
-                className="text-center mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+                className="text-center mt-6 pt-4 border-t border-champagne-200 dark:border-forest-green-700"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm font-body text-gray-600 dark:text-champagne-300">
                   {isLogin ? "Don't have an account?" : 'Already have an account?'}
                 </p>
                 <button
@@ -533,12 +533,12 @@ const AppContent = () => {
                     setError('');
                     setFormErrors({});
                   }}
-                  className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none flex items-center justify-center mx-auto transition-colors duration-200"
+                  className="mt-2 text-sm font-heading font-medium text-forest-green-600 hover:text-rich-gold-600 dark:text-rich-gold-400 dark:hover:text-rich-gold-300 focus:outline-none flex items-center justify-center mx-auto transition-colors duration-300"
                 >
                   {isLogin ? (
                     <>
                       <User className="mr-1.5 h-4 w-4" />
-                      <span>Create an account</span>
+                      <span className="font-body">Create an account</span>
                     </>
                   ) : (
                     <>

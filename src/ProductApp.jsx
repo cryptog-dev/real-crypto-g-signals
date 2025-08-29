@@ -219,27 +219,27 @@ const ProductApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-light-gray via-champagne-50 to-champagne-100 dark:from-gray-900 dark:via-charcoal dark:to-forest-green-900 relative overflow-hidden">
       {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-green-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-400/5 rounded-full blur-3xl"></div>
+      <div className="absolute top-20 right-0 w-72 h-72 bg-rich-gold-400/15 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-forest-green-400/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-champagne-400/10 rounded-full blur-3xl"></div>
 
       <Navbar isAppView={true} activeTab={activeTab} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-26 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="text-gray-800 dark:text-gray-100">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 font-heading">
+            <span className="text-charcoal dark:text-champagne-100">
               Welcome back,{" "}
             </span>
-            <span className="text-green-600 dark:text-green-400">
+            <span className="text-forest-green-600 dark:text-rich-gold-400">
               {user?.username}
             </span>
-            <span className="text-amber-500 dark:text-amber-400">!</span>
+            <span className="text-rich-gold-500 dark:text-rich-gold-400">!</span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-charcoal/80 dark:text-champagne-300 max-w-3xl mx-auto font-body">
             Access your personalized crypto trading dashboard with real-time
             signals and market analysis.
           </p>
@@ -260,8 +260,13 @@ const ProductApp = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm md:text-base font-medium transition-all duration-200 ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-700/50 backdrop-blur-sm"
+                      ? "bg-gradient-to-r from-forest-green-500 to-forest-green-600 text-champagne-50 shadow-forest border border-rich-gold-400/30"
+                      : "text-charcoal/70 dark:text-champagne-400 hover:text-charcoal dark:hover:text-champagne-100 bg-white/60 dark:bg-forest-green-800/40 hover:bg-champagne-100/80 dark:hover:bg-forest-green-700/60 backdrop-blur-luxury border border-champagne-200/50 dark:border-forest-green-600/50"
+                  }`}
+                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-luxury text-sm md:text-base font-medium transition-all duration-300 font-heading ${
+                    activeTab === tab.id
+                      ? "bg-gradient-to-r from-forest-green-500 to-forest-green-600 text-champagne-50 shadow-forest border border-rich-gold-400/30"
+                      : "text-charcoal/70 dark:text-champagne-400 hover:text-charcoal dark:hover:text-champagne-100 bg-white/60 dark:bg-forest-green-800/40 hover:bg-champagne-100/80 dark:hover:bg-forest-green-700/60 backdrop-blur-luxury border border-champagne-200/50 dark:border-forest-green-600/50"
                   }`}
                 >
                   <tab.icon className="h-4 w-4 md:h-5 md:w-5" />

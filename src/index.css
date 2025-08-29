@@ -35,15 +35,18 @@
 body {
   font-family: var(--font-body);
   color: var(--charcoal);
+  background: var(--light-gray);
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 .font-mono {
   font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
 }
 
 @layer utilities {
@@ -99,31 +102,72 @@ h1, h2, h3, h4, h5, h6 {
   .shadow-forest {
     box-shadow: 0 4px 14px 0 rgba(27, 67, 50, 0.15);
   }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, var(--rich-gold), #f4d03f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-forest {
+    background: linear-gradient(135deg, var(--deep-forest-green), #2d5a3d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass-effect {
+    background: rgba(27, 67, 50, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+  }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--light-gray);
+  background: var(--champagne-gold);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--deep-forest-green);
-  border-radius: 3px;
+  background: linear-gradient(180deg, var(--deep-forest-green), var(--rich-gold));
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--rich-gold);
+  background: linear-gradient(180deg, var(--rich-gold), var(--deep-forest-green));
 }
 
 /* Dark mode scrollbar */
 .dark ::-webkit-scrollbar-track {
-  background: #374151;
+  background: var(--deep-forest-green);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: var(--rich-gold);
+  background: linear-gradient(180deg, var(--rich-gold), #f4d03f);
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Enhanced focus styles */
+*:focus-visible {
+  outline: 2px solid var(--rich-gold);
+  outline-offset: 2px;
+  border-radius: 8px;
 }

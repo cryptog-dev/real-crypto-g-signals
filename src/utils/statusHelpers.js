@@ -3,18 +3,18 @@ import { SIGNAL_STATUS } from '../constants';
 export const getStatusColor = (status) => {
   switch (status) {
     case SIGNAL_STATUS.SUCCESS:
-      return "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400";
+      return "text-success-green bg-success-green/10 dark:bg-success-green/20 dark:text-success-green border border-success-green/20";
     case SIGNAL_STATUS.FAIL:
-      return "text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-400";
+      return "text-warning-red bg-warning-red/10 dark:bg-warning-red/20 dark:text-warning-red border border-warning-red/20";
     case SIGNAL_STATUS.PENDING:
-      return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-400";
+      return "text-rich-gold-600 bg-rich-gold/10 dark:bg-rich-gold/20 dark:text-rich-gold-400 border border-rich-gold/20";
     default:
-      return "text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400";
+      return "text-charcoal/70 bg-champagne-100 dark:bg-forest-green-700 dark:text-champagne-400 border border-champagne-200 dark:border-forest-green-600";
   }
 };
 
 export const getDirectionColor = (direction) => {
-  return direction === 'long' ? 'text-green-500' : 'text-red-500';
+  return direction === 'long' ? 'text-success-green' : 'text-warning-red';
 };
 
 export const getDirectionIcon = (direction) => {
