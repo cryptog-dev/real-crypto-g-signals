@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { useAuth } from "./context/AuthContext";
 import { ThemeContext } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
@@ -11,13 +11,37 @@ import SignalsList from "./components/SignalsList";
 import BlogsList from "./components/BlogsList";
 import ChartsTab from "./components/ChartsTab";
 import CreateEditModal from "./components/CreateEditModal";
-import {
-  Home,
-  Signal,
-  BookOpen,
-  BarChart,
-} from "lucide-react";
+import { Home, Signal, BookOpen, BarChart } from "lucide-react";
 import { blogsAPI, signalsAPI } from "./utils/api";
+
+// Define tab configuration outside the component for better readability and reusability
+const TAB_CONFIG = [
+  { id: "dashboard", name: "Home", icon: Home },
+  { id: "signals", name: "Signals", icon: Signal },
+  { id: "blogs", name: "Analysis", icon: BookOpen },
+  { id: "charts", name: "Charts", icon: BarChart },
+];
+
+// Define status colors as a constant for reusability and consistency
+const STATUS_COLORS = {
+  success: "text-[#48BB78] bg-[#48BB78]/10 dark:bg-[#48BB78]/20",
+  fail: "text-[#F56565] bg-[#F56565]/10 dark:bg-[#F56565]/20",
+  pending: "text-[#FFD700] bg-[#FFD700]/10 dark:bg-[#FFD700]/20",
+  default: "text-[#2D3748] bg-[#F7FAFC] dark:bg-[#2D3748]/50 dark:text-[#F7FAFC]",
+};
+
+const DEFAULT_FORM_DATA = {
+  title: "",
+  content: "",
+  image: "",
+  coin: "",
+  direction: "buy",
+  entry_price: "",
+  leverage: "",
+  stop_loss: "",
+  targets: "",
+  status: "pending",
+};
 
 const ProductApp = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -27,41 +51,15 @@ const ProductApp = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [modalType, setModalType] = useState("blog");
   const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const { user, isAdmin, isPremium } = useAuth();
   const { darkMode } = useContext(ThemeContext);
 
-  const isFree = () => !isAdmin() && !isPremium();
+  // Memoize the isFree check to avoid recalculating on every render
+  const isFree = !isAdmin() && !isPremium();
 
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    image: "",
-    coin: "",
-    direction: "buy",
-    entry_price: "",
-    leverage: "",
-    stop_loss: "",
-    targets: "",
-    status: "pending",
-  });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    const handleNavTabChange = (event) => {
-      const tabName = event.detail;
-      if (["dashboard", "signals", "blogs", "charts"].includes(tabName)) {
-        setActiveTab(tabName);
-      }
-    };
-
-    window.addEventListener("navTabChange", handleNavTabChange);
-    return () => window.removeEventListener("navTabChange", handleNavTabChange);
-  }, []);
-
-  const fetchData = async () => {
+  // Fetch data with useCallback to avoid recreating the function on every render
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [blogsResponse, signalsResponse] = await Promise.all([
@@ -72,30 +70,41 @@ const ProductApp = () => {
       setSignals(signalsResponse.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      // Optionally, show a user-friendly error message here
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleCreate = (type) => {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Handle nav tab change with useCallback
+  useEffect(() => {
+    const handleNavTabChange = (event) => {
+      const tabName = event.detail;
+      if (TAB_CONFIG.some(tab => tab.id === tabName)) {
+        setActiveTab(tabName);
+      }
+    };
+    window.addEventListener("navTabChange", handleNavTabChange);
+    return () => window.removeEventListener("navTabChange", handleNavTabChange);
+  }, []);
+
+  // Reset form data to default values
+  const resetFormData = useCallback(() => {
+    setFormData(DEFAULT_FORM_DATA);
+  }, []);
+
+  const handleCreate = useCallback((type) => {
     setModalType(type);
     setEditingItem(null);
-    setFormData({
-      title: "",
-      content: "",
-      image: "",
-      coin: "",
-      direction: "buy",
-      entry_price: "",
-      leverage: "",
-      stop_loss: "",
-      targets: "",
-      status: "pending",
-    });
+    resetFormData();
     setShowCreateModal(true);
-  };
+  }, [resetFormData]);
 
-  const handleEdit = (item, type) => {
+  const handleEdit = useCallback((item, type) => {
     setModalType(type);
     setEditingItem(item);
     setFormData({
@@ -107,32 +116,30 @@ const ProductApp = () => {
       entry_price: item.entry_price || "",
       leverage: item.leverage || "",
       stop_loss: item.stop_loss || "",
-      targets:
-        typeof item.targets === "string"
-          ? item.targets
-          : JSON.stringify(item.targets || {}),
+      targets: typeof item.targets === "string" ? item.targets : JSON.stringify(item.targets || {}),
       status: item.status || "pending",
     });
     setShowCreateModal(true);
-  };
+  }, []);
 
-  const handleDelete = async (id, type) => {
+  const handleDelete = useCallback(async (id, type) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
         if (type === "blog") {
           await blogsAPI.delete(id);
-          setBlogs(blogs.filter((blog) => blog.id !== id));
+          setBlogs(prev => prev.filter(blog => blog.id !== id));
         } else {
           await signalsAPI.delete(id);
-          setSignals(signals.filter((signal) => signal.id !== id));
+          setSignals(prev => prev.filter(signal => signal.id !== id));
         }
       } catch (error) {
         console.error("Error deleting item:", error);
+        // Optionally, show a user-friendly error message here
       }
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
       if (modalType === "blog") {
@@ -141,17 +148,14 @@ const ProductApp = () => {
           content: formData.content,
           image: formData.image,
         };
-
         if (editingItem) {
-          await blogsAPI.update(editingItem.id, blogData);
-          setBlogs(
-            blogs.map((blog) =>
-              blog.id === editingItem.id ? { ...blog, ...blogData } : blog
-            )
-          );
+          const response = await blogsAPI.update(editingItem.id, blogData);
+          setBlogs(prev => prev.map(blog =>
+            blog.id === editingItem.id ? { ...blog, ...response.data } : blog
+          ));
         } else {
           const response = await blogsAPI.create(blogData);
-          setBlogs([...blogs, response.data]);
+          setBlogs(prev => [...prev, response.data]);
         }
       } else {
         const signalData = {
@@ -163,54 +167,41 @@ const ProductApp = () => {
           targets: formData.targets,
           status: formData.status,
         };
-
         if (editingItem) {
-          await signalsAPI.update(editingItem.id, signalData);
-          setSignals(
-            signals.map((signal) =>
-              signal.id === editingItem.id
-                ? { ...signal, ...signalData }
-                : signal
-            )
-          );
+          const response = await signalsAPI.update(editingItem.id, signalData);
+          setSignals(prev => prev.map(signal =>
+            signal.id === editingItem.id ? { ...signal, ...response.data } : signal
+          ));
         } else {
           const response = await signalsAPI.create(signalData);
-          setSignals([...signals, response.data]);
+          setSignals(prev => [...prev, response.data]);
         }
+        setShowCreateModal(false);
       }
-      setShowCreateModal(false);
     } catch (error) {
       console.error("Error saving item:", error);
+      // Optionally, show a user-friendly error message here
     }
-  };
+  }, [modalType, formData, editingItem]);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
-  };
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "success":
-        return "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400";
-      case "fail":
-        return "text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-400";
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-400";
-      default:
-        return "text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400";
-    }
-  };
+  const getStatusColor = useCallback((status) => {
+    return STATUS_COLORS[status] || STATUS_COLORS.default;
+  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7FAFC] dark:bg-[#2D3748] flex items-center justify-center font-sans">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B4332] dark:border-[#FFD700] mx-auto"></div>
+          <p className="mt-4 text-[#2D3748] dark:text-[#F7FAFC] font-sans text-lg">
             Loading your dashboard...
           </p>
         </div>
@@ -219,29 +210,28 @@ const ProductApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#F7FAFC] via-[#F7E7CE]/30 to-[#FFFFFF] dark:from-[#2D3748] dark:via-[#1B4332]/30 dark:to-[#2D3748] relative overflow-hidden font-sans">
       {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-green-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-400/5 rounded-full blur-3xl"></div>
+      <div className="absolute top-20 right-0 w-72 h-72 bg-[#1B4332]/10 dark:bg-[#FFD700]/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-[#FFD700]/10 dark:bg-[#1B4332]/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-[#F7E7CE]/10 dark:bg-[#F7E7CE]/5 rounded-full blur-3xl"></div>
 
       <Navbar isAppView={true} activeTab={activeTab} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-26 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="text-gray-800 dark:text-gray-100">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 font-heading tracking-tight">
+            <span className="text-[#2D3748] dark:text-[#F7FAFC]">
               Welcome back,{" "}
             </span>
-            <span className="text-green-600 dark:text-green-400">
+            <span className="text-[#1B4332] dark:text-[#FFD700]">
               {user?.username}
             </span>
-            <span className="text-amber-500 dark:text-amber-400">!</span>
+            <span className="text-[#FFD700] dark:text-[#F7E7CE]">!</span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Access your personalized crypto trading dashboard with real-time
-            signals and market analysis.
+          <p className="text-xl text-[#2D3748]/80 dark:text-[#F7FAFC]/80 max-w-3xl mx-auto font-sans leading-relaxed">
+            Access your personalized crypto trading dashboard with real-time signals and market analysis.
           </p>
         </div>
 
@@ -249,34 +239,29 @@ const ProductApp = () => {
         <div className="mb-8 md:mb-12 px-2 md:px-0">
           <div className="overflow-x-auto pb-2">
             <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
-              {[
-                { id: "dashboard", name: "Dashboard", icon: Home },
-                { id: "signals", name: "Signals", icon: Signal },
-                { id: "blogs", name: "Analysis", icon: BookOpen },
-                { id: "charts", name: "Charts", icon: BarChart },
-              ].map((tab) => (
+              {TAB_CONFIG.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm md:text-base font-medium transition-all duration-200 ${
+                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-4 py-2.5 rounded-lg text-base font-medium font-heading transition-all duration-300 ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-700/50 backdrop-blur-sm"
+                      ? "bg-gradient-to-r from-[#1B4332] to-[#1B4332]/80 text-[#F7FAFC] shadow-lg border border-[#FFD700]/20"
+                      : "text-[#2D3748] dark:text-[#F7FAFC] hover:text-[#1B4332] dark:hover:text-[#FFD700] bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 hover:bg-[#F7FAFC] dark:hover:bg-[#2D3748] backdrop-blur-sm border border-[#F7E7CE]/20 hover:border-[#FFD700]/30"
                   }`}
                 >
-                  <tab.icon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="whitespace-nowrap">{tab.id === 'dashboard' ? 'Home' : tab.name}</span>
+                  <tab.icon className="h-5 w-5" />
+                  <span className="whitespace-nowrap">{tab.name}</span>
                 </button>
               ))}
             </nav>
           </div>
         </div>
 
-        {/* Dashboard Tab */}
+        {/* Tab Content */}
         {activeTab === "dashboard" && (
-          <div className="space-y-6 md:space-y-8">
+          <div className="space-y-8">
             <DashboardStats signals={signals} blogs={blogs} />
-            {isAdmin() ? (
+            {isAdmin ? (
               <div className="px-2 md:px-0">
                 <AdminControls handleCreate={handleCreate} />
               </div>
@@ -285,46 +270,58 @@ const ProductApp = () => {
                 <UserFeatures />
               </div>
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 px-2 md:px-0">
-              <div className="w-full">
-                <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-2 md:px-0">
+              <div className="w-full rounded-lg bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 backdrop-blur-sm border border-[#F7E7CE]/20 shadow-sm">
+                <RecentSignals
+                  signals={signals}
+                  getStatusColor={getStatusColor}
+                  formatDate={formatDate}
+                />
               </div>
-              <div className="w-full">
-                <RecentBlogs blogs={blogs} formatDate={formatDate} />
+              <div className="w-full rounded-lg bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 backdrop-blur-sm border border-[#F7E7CE]/20 shadow-sm">
+                <RecentBlogs
+                  blogs={blogs}
+                  formatDate={formatDate}
+                />
               </div>
             </div>
           </div>
         )}
 
-        {/* Signals Tab */}
         {activeTab === "signals" && (
-          <SignalsList
-            signals={signals}
-            isAdmin={isAdmin}
-            isFree={isFree}
-            handleCreate={handleCreate}
-            handleEdit={handleEdit}
-            handleDelete={handleDelete}
-            getStatusColor={getStatusColor}
-            formatDate={formatDate}
-            isPremium={isPremium}
-          />
+          <div className="rounded-lg bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 backdrop-blur-sm border border-[#F7E7CE]/20 shadow-sm p-6">
+            <SignalsList
+              signals={signals}
+              isAdmin={isAdmin}
+              isFree={isFree}
+              handleCreate={handleCreate}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              getStatusColor={getStatusColor}
+              formatDate={formatDate}
+              isPremium={isPremium}
+            />
+          </div>
         )}
 
-        {/* Blogs Tab */}
         {activeTab === "blogs" && (
-          <BlogsList
-            blogs={blogs}
-            isAdmin={isAdmin}
-            handleCreate={handleCreate}
-            handleEdit={handleEdit}
-            handleDelete={handleDelete}
-            formatDate={formatDate}
-          />
+          <div className="rounded-lg bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 backdrop-blur-sm border border-[#F7E7CE]/20 shadow-sm p-6">
+            <BlogsList
+              blogs={blogs}
+              isAdmin={isAdmin}
+              handleCreate={handleCreate}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              formatDate={formatDate}
+            />
+          </div>
         )}
 
-        {/* Charts Tab */}
-        {activeTab === "charts" && <ChartsTab />}
+        {activeTab === "charts" && (
+          <div className="rounded-lg bg-[#F7FAFC]/80 dark:bg-[#2D3748]/80 backdrop-blur-sm border border-[#F7E7CE]/20 shadow-sm p-6">
+            <ChartsTab />
+          </div>
+        )}
 
         {/* Create/Edit Modal */}
         <CreateEditModal
@@ -337,7 +334,6 @@ const ProductApp = () => {
           handleSubmit={handleSubmit}
           darkMode={darkMode}
         />
-
       </div>
     </div>
   );
