@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import AdminPanel from "./AdminPanel";
+import AdminPanel from "./components/admin/AdminPanel";
 
 const AdminRoute = () => {
   const { isAdmin, loading } = useAuth();

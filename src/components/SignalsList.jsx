@@ -2,7 +2,7 @@
 // Enhanced version with improved UI and admin target visibility
 import React from "react";
 
-const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handleDelete, getStatusColor, formatDate, isPremium }) => {
+const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handleDelete, formatDate, isPremium }) => {
   // Check if user should see targets (premium users or admins)
   const canViewTargets = () => isPremium() || isAdmin();
   
@@ -127,8 +127,29 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                     </span>
                   </div>
                 </div>
-                <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(signal.status)} shadow-sm`}>
-                  {signal.status}
+                <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold shadow-md ${
+                  signal.status === 'success' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                    : signal.status === 'fail' 
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                }`}>
+                  {signal.status === 'success' && (
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {signal.status === 'fail' && (
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {signal.status === 'pending' && (
+                    <svg className="w-4 h-4 mr-2 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="text-base">{signal.status.charAt(0).toUpperCase() + signal.status.slice(1)}</span>
                 </span>
               </div>
 

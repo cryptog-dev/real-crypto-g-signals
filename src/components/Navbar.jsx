@@ -12,15 +12,15 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <img 
-              className="h-10 w-auto" 
-              src={Logo} 
+            <img
+              className="h-10 w-auto"
+              src={Logo}
               alt="Logo"
               style={{
-                maxHeight: '40px',
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain'
+                maxHeight: "40px",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
               }}
             />
           </div>

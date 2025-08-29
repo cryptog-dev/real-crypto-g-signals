@@ -11,12 +11,7 @@ import SignalsList from "./components/SignalsList";
 import BlogsList from "./components/BlogsList";
 import ChartsTab from "./components/ChartsTab";
 import CreateEditModal from "./components/CreateEditModal";
-import {
-  Home,
-  Signal,
-  BookOpen,
-  BarChart,
-} from "lucide-react";
+import { Home, Signal, BookOpen, BarChart, TrendingUp, Activity, Zap } from "lucide-react";
 import { blogsAPI, signalsAPI } from "./utils/api";
 
 const ProductApp = () => {
@@ -27,25 +22,33 @@ const ProductApp = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [modalType, setModalType] = useState("blog");
   const [editingItem, setEditingItem] = useState(null);
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false);
   const { user, isAdmin, isPremium } = useAuth();
   const { darkMode } = useContext(ThemeContext);
 
   const isFree = () => !isAdmin() && !isPremium();
 
   const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    image: "",
-    coin: "",
-    direction: "buy",
-    entry_price: "",
-    leverage: "",
-    stop_loss: "",
-    targets: "",
-    status: "pending",
+    title: "", content: "", image: "", coin: "", direction: "buy",
+    entry_price: "", leverage: "", stop_loss: "", targets: "", status: "pending",
   });
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [blogsResponse, signalsResponse] = await Promise.all([
+          blogsAPI.getAll(),
+          signalsAPI.getAll(),
+        ]);
+        setBlogs(blogsResponse.data);
+        setSignals(signalsResponse.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
   }, []);
 
@@ -53,44 +56,28 @@ const ProductApp = () => {
     const handleNavTabChange = (event) => {
       const tabName = event.detail;
       if (["dashboard", "signals", "blogs", "charts"].includes(tabName)) {
-        setActiveTab(tabName);
+        handleTabChange(tabName);
       }
     };
-
     window.addEventListener("navTabChange", handleNavTabChange);
     return () => window.removeEventListener("navTabChange", handleNavTabChange);
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [blogsResponse, signalsResponse] = await Promise.all([
-        blogsAPI.getAll(),
-        signalsAPI.getAll(),
-      ]);
-      setBlogs(blogsResponse.data);
-      setSignals(signalsResponse.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    setIsTabTransitioning(true);
+    setTimeout(() => {
+      setActiveTab(newTab);
+      setIsTabTransitioning(false);
+    }, 150);
   };
 
   const handleCreate = (type) => {
     setModalType(type);
     setEditingItem(null);
     setFormData({
-      title: "",
-      content: "",
-      image: "",
-      coin: "",
-      direction: "buy",
-      entry_price: "",
-      leverage: "",
-      stop_loss: "",
-      targets: "",
-      status: "pending",
+      title: "", content: "", image: "", coin: "", direction: "buy",
+      entry_price: "", leverage: "", stop_loss: "", targets: "", status: "pending",
     });
     setShowCreateModal(true);
   };
@@ -99,84 +86,52 @@ const ProductApp = () => {
     setModalType(type);
     setEditingItem(item);
     setFormData({
-      title: item.title || "",
-      content: item.content || "",
-      image: item.image || "",
-      coin: item.coin || "",
-      direction: item.direction || "long",
-      entry_price: item.entry_price || "",
-      leverage: item.leverage || "",
-      stop_loss: item.stop_loss || "",
-      targets:
-        typeof item.targets === "string"
-          ? item.targets
-          : JSON.stringify(item.targets || {}),
+      title: item.title || "", content: item.content || "", image: item.image || "",
+      coin: item.coin || "", direction: item.direction || "buy", entry_price: item.entry_price || "",
+      leverage: item.leverage || "", stop_loss: item.stop_loss || "",
+      targets: typeof item.targets === "string" ? item.targets : JSON.stringify(item.targets || {}),
       status: item.status || "pending",
     });
     setShowCreateModal(true);
   };
 
   const handleDelete = async (id, type) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      try {
-        if (type === "blog") {
-          await blogsAPI.delete(id);
-          setBlogs(blogs.filter((blog) => blog.id !== id));
-        } else {
-          await signalsAPI.delete(id);
-          setSignals(signals.filter((signal) => signal.id !== id));
-        }
-      } catch (error) {
-        console.error("Error deleting item:", error);
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    try {
+      if (type === "blog") {
+        await blogsAPI.delete(id);
+        setBlogs(blogs.filter((blog) => blog.id !== id));
+      } else {
+        await signalsAPI.delete(id);
+        setSignals(signals.filter((signal) => signal.id !== id));
       }
+    } catch (error) {
+      console.error("Error deleting item:", error);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (modalType === "blog") {
-        const blogData = {
-          title: formData.title,
-          content: formData.content,
-          image: formData.image,
-        };
+      const data = modalType === "blog"
+        ? { title: formData.title, content: formData.content, image: formData.image }
+        : {
+            coin: formData.coin, direction: formData.direction, entry_price: parseFloat(formData.entry_price),
+            leverage: parseInt(formData.leverage), stop_loss: parseFloat(formData.stop_loss),
+            targets: formData.targets, status: formData.status,
+          };
 
-        if (editingItem) {
-          await blogsAPI.update(editingItem.id, blogData);
-          setBlogs(
-            blogs.map((blog) =>
-              blog.id === editingItem.id ? { ...blog, ...blogData } : blog
-            )
-          );
+      if (editingItem) {
+        if (modalType === "blog") {
+          await blogsAPI.update(editingItem.id, data);
+          setBlogs(blogs.map((blog) => (blog.id === editingItem.id ? { ...blog, ...data } : blog)));
         } else {
-          const response = await blogsAPI.create(blogData);
-          setBlogs([...blogs, response.data]);
+          await signalsAPI.update(editingItem.id, data);
+          setSignals(signals.map((signal) => (signal.id === editingItem.id ? { ...signal, ...data } : signal)));
         }
       } else {
-        const signalData = {
-          coin: formData.coin,
-          direction: formData.direction,
-          entry_price: parseFloat(formData.entry_price),
-          leverage: parseInt(formData.leverage),
-          stop_loss: parseFloat(formData.stop_loss),
-          targets: formData.targets,
-          status: formData.status,
-        };
-
-        if (editingItem) {
-          await signalsAPI.update(editingItem.id, signalData);
-          setSignals(
-            signals.map((signal) =>
-              signal.id === editingItem.id
-                ? { ...signal, ...signalData }
-                : signal
-            )
-          );
-        } else {
-          const response = await signalsAPI.create(signalData);
-          setSignals([...signals, response.data]);
-        }
+        const response = modalType === "blog" ? await blogsAPI.create(data) : await signalsAPI.create(data);
+        modalType === "blog" ? setBlogs([...blogs, response.data]) : setSignals([...signals, response.data]);
       }
       setShowCreateModal(false);
     } catch (error) {
@@ -184,34 +139,36 @@ const ProductApp = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "success":
-        return "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400";
-      case "fail":
-        return "text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-400";
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-400";
-      default:
-        return "text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400";
-    }
+    const colors = {
+      success: "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400",
+      fail: "text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-400",
+      pending: "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-400",
+    };
+    return colors[status] || "text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400";
   };
+
+  const getTabConfig = () => [
+    { id: "dashboard", name: "Dashboard", displayName: "Home", icon: Home, gradient: "from-blue-500 to-indigo-600" },
+    { id: "signals", name: "Signals", displayName: "Signals", icon: Signal, gradient: "from-green-500 to-emerald-600" },
+    { id: "blogs", name: "Analysis", displayName: "Analysis", icon: BookOpen, gradient: "from-purple-500 to-violet-600" },
+    { id: "charts", name: "Charts", displayName: "Charts", icon: BarChart, gradient: "from-orange-500 to-red-600" },
+  ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Loading your dashboard...
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500/20 border-t-green-500 mx-auto"></div>
+            <TrendingUp className="absolute inset-0 m-auto h-6 w-6 text-green-500 animate-pulse" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Loading Dashboard</h3>
+          <p className="text-gray-600 dark:text-gray-400 flex items-center justify-center mt-2">
+            <Activity className="mr-2 h-4 w-4 animate-pulse" /> Fetching data...
           </p>
         </div>
       </div>
@@ -219,114 +176,72 @@ const ProductApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-green-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-400/5 rounded-full blur-3xl"></div>
-
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Navbar isAppView={true} activeTab={activeTab} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-26 relative z-10">
-        {/* Header Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="text-gray-800 dark:text-gray-100">
-              Welcome back,{" "}
-            </span>
-            <span className="text-green-600 dark:text-green-400">
-              {user?.username}
-            </span>
-            <span className="text-amber-500 dark:text-amber-400">!</span>
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Access your personalized crypto trading dashboard with real-time
-            signals and market analysis.
-          </p>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="mb-8 md:mb-12 px-2 md:px-0">
-          <div className="overflow-x-auto pb-2">
-            <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
-              {[
-                { id: "dashboard", name: "Dashboard", icon: Home },
-                { id: "signals", name: "Signals", icon: Signal },
-                { id: "blogs", name: "Analysis", icon: BookOpen },
-                { id: "charts", name: "Charts", icon: BarChart },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm md:text-base font-medium transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-700/50 backdrop-blur-sm"
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="whitespace-nowrap">{tab.id === 'dashboard' ? 'Home' : tab.name}</span>
-                </button>
-              ))}
-            </nav>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <div className="text-center mb-8">
+          <div className="relative bg-white/80 dark:bg-gray-800/80 rounded-xl p-6 shadow-md">
+            <h1 className="text-3xl font-bold mb-4">
+              Welcome, <span className="text-green-600">{user?.username}</span>
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">Your crypto trading dashboard with real-time signals.</p>
           </div>
         </div>
 
-        {/* Dashboard Tab */}
-        {activeTab === "dashboard" && (
-          <div className="space-y-6 md:space-y-8">
-            <DashboardStats signals={signals} blogs={blogs} />
-            {isAdmin() ? (
-              <div className="px-2 md:px-0">
-                <AdminControls handleCreate={handleCreate} />
-              </div>
-            ) : (
-              <div className="px-2 md:px-0">
-                <UserFeatures />
-              </div>
-            )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 px-2 md:px-0">
-              <div className="w-full">
+        <nav className="flex space-x-2 mb-8 overflow-x-auto">
+          {getTabConfig().map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? `bg-gradient-to-r ${tab.gradient} text-white shadow-md`
+                  : "text-gray-600 dark:text-gray-400 bg-white/70 dark:bg-gray-800/70 hover:bg-white dark:hover:bg-gray-700"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.displayName}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className={`transition-opacity duration-300 ${isTabTransitioning ? "opacity-0" : "opacity-100"}`}>
+          {activeTab === "dashboard" && (
+            <div className="space-y-6">
+              <DashboardStats signals={signals} blogs={blogs} />
+              {isAdmin() ? <AdminControls handleCreate={handleCreate} /> : <UserFeatures />}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
-              </div>
-              <div className="w-full">
                 <RecentBlogs blogs={blogs} formatDate={formatDate} />
               </div>
             </div>
-          </div>
-        )}
+          )}
+          {activeTab === "signals" && (
+            <SignalsList
+              signals={signals}
+              isAdmin={isAdmin}
+              isFree={isFree}
+              handleCreate={handleCreate}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              getStatusColor={getStatusColor}
+              formatDate={formatDate}
+              isPremium={isPremium}
+            />
+          )}
+          {activeTab === "blogs" && (
+            <BlogsList
+              blogs={blogs}
+              isAdmin={isAdmin}
+              handleCreate={handleCreate}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              formatDate={formatDate}
+            />
+          )}
+          {activeTab === "charts" && <ChartsTab />}
+        </div>
 
-        {/* Signals Tab */}
-        {activeTab === "signals" && (
-          <SignalsList
-            signals={signals}
-            isAdmin={isAdmin}
-            isFree={isFree}
-            handleCreate={handleCreate}
-            handleEdit={handleEdit}
-            handleDelete={handleDelete}
-            getStatusColor={getStatusColor}
-            formatDate={formatDate}
-            isPremium={isPremium}
-          />
-        )}
-
-        {/* Blogs Tab */}
-        {activeTab === "blogs" && (
-          <BlogsList
-            blogs={blogs}
-            isAdmin={isAdmin}
-            handleCreate={handleCreate}
-            handleEdit={handleEdit}
-            handleDelete={handleDelete}
-            formatDate={formatDate}
-          />
-        )}
-
-        {/* Charts Tab */}
-        {activeTab === "charts" && <ChartsTab />}
-
-        {/* Create/Edit Modal */}
         <CreateEditModal
           show={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -337,7 +252,6 @@ const ProductApp = () => {
           handleSubmit={handleSubmit}
           darkMode={darkMode}
         />
-
       </div>
     </div>
   );
