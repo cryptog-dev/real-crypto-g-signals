@@ -1,6 +1,59 @@
 @import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/source-sans-pro/400.css";
+@import "@fontsource/source-sans-pro/500.css";
+@import "@fontsource/source-sans-pro/600.css";
+@import "@fontsource/roboto-mono/400.css";
+@import "@fontsource/roboto-mono/500.css";
+
+:root {
+  /* Primary Colors */
+  --deep-forest-green: #1B4332;
+  --rich-gold: #FFD700;
+  --champagne-gold: #F7E7CE;
+  
+  /* Supporting Colors */
+  --charcoal: #2D3748;
+  --light-gray: #F7FAFC;
+  --success-green: #48BB78;
+  --warning-red: #F56565;
+  --pure-white: #FFFFFF;
+  
+  /* Typography */
+  --font-heading: 'Inter', 'Poppins', sans-serif;
+  --font-body: 'Source Sans Pro', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--charcoal);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
 
 @layer utilities {
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -14,4 +67,63 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  .bg-forest-green {
+    background-color: var(--deep-forest-green);
+  }
+
+  .bg-rich-gold {
+    background-color: var(--rich-gold);
+  }
+
+  .bg-champagne-gold {
+    background-color: var(--champagne-gold);
+  }
+
+  .text-forest-green {
+    color: var(--deep-forest-green);
+  }
+
+  .text-rich-gold {
+    color: var(--rich-gold);
+  }
+
+  .border-rich-gold {
+    border-color: var(--rich-gold);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 4px 14px 0 rgba(255, 215, 0, 0.15);
+  }
+
+  .shadow-forest {
+    box-shadow: 0 4px 14px 0 rgba(27, 67, 50, 0.15);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--deep-forest-green);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rich-gold);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--rich-gold);
 }

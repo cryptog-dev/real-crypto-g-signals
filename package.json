@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "@fontsource/poppins": "^5.2.6",
+    "@fontsource/roboto-mono": "^5.2.6",
+    "@fontsource/source-sans-pro": "^5.2.5",
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
