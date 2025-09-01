@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useAuth } from "./context/AuthContext";
-import { ThemeContext } from "./context/ThemeContext";
+import { useTheme } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
 import DashboardStats from "./components/DashboardStats";
 import AdminControls from "./components/AdminControls";
@@ -11,6 +11,7 @@ import SignalsList from "./components/SignalsList";
 import BlogsList from "./components/BlogsList";
 import ChartsTab from "./components/ChartsTab";
 import CreateEditModal from "./components/CreateEditModal";
+import WelcomePopup from "./components/WelcomePopup"; // You'll need to create this
 import {
   Home,
   Signal,
@@ -25,10 +26,11 @@ const ProductApp = () => {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(true); // Controls welcome popup
   const [modalType, setModalType] = useState("blog");
   const [editingItem, setEditingItem] = useState(null);
   const { user, isAdmin, isPremium } = useAuth();
-  const { darkMode } = useContext(ThemeContext);
+  const { darkMode } = useTheme();
 
   const isFree = () => !isAdmin() && !isPremium();
 
@@ -195,22 +197,22 @@ const ProductApp = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "success":
-        return "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400";
+        return "text-[var(--color-accent1)] bg-[var(--color-accent1)]/20 border border-[var(--color-accent1)]/30";
       case "fail":
-        return "text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-400";
+        return "text-[var(--color-secondary)] bg-[var(--color-secondary)]/20 border border-[var(--color-secondary)]/30";
       case "pending":
-        return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-400";
+        return "text-[var(--color-accent2)] bg-[var(--color-accent2)]/20 border border-[var(--color-accent2)]/30";
       default:
-        return "text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400";
+        return "text-[var(--color-neutral-dark)]/60 bg-[var(--color-neutral-dark)]/10 border border-[var(--color-neutral-dark)]/20";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-neutral-light)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[var(--color-primary)] mx-auto"></div>
+          <p className="mt-4 text-[var(--color-neutral-dark)] font-medium">
             Loading your dashboard...
           </p>
         </div>
@@ -219,34 +221,12 @@ const ProductApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-green-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-400/5 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-[var(--color-neutral-light)] transition-colors duration-300">
+      <Navbar />
 
-      <Navbar isAppView={true} activeTab={activeTab} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-26 relative z-10">
-        {/* Header Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="text-gray-800 dark:text-gray-100">
-              Welcome back,{" "}
-            </span>
-            <span className="text-green-600 dark:text-green-400">
-              {user?.username}
-            </span>
-            <span className="text-amber-500 dark:text-amber-400">!</span>
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Access your personalized crypto trading dashboard with real-time
-            signals and market analysis.
-          </p>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="mb-8 md:mb-12 px-2 md:px-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-24">
+        {/* Navigation Tabs - Theme Responsive */}
+        <div className="mb-8 px-2 md:px-0">
           <div className="overflow-x-auto pb-2">
             <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
               {[
@@ -258,13 +238,18 @@ const ProductApp = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-shrink-0 flex items-center space-x-1 md:space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm md:text-base font-medium transition-all duration-200 ${
+                  className={`lego-button flex-shrink-0 flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 font-sans ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-700/50 backdrop-blur-sm"
+                      ? "bg-[var(--color-primary)] text-white border-b-4 border-[var(--color-primary-dark)]"
+                      : "bg-[var(--color-card-bg)] text-[var(--color-text-primary)] border-b-4 border-[var(--color-card-bg)] hover:border-b-4 hover:border-[var(--color-primary)]/30"
                   }`}
+                  style={{
+                    boxShadow: activeTab === tab.id 
+                      ? '0 4px 6px rgba(var(--color-primary-rgb), 0.2)' 
+                      : '0 4px 6px rgba(var(--color-neutral-dark-rgb), 0.1)'
+                  }}
                 >
-                  <tab.icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <tab.icon className="h-5 w-5" />
                   <span className="whitespace-nowrap">{tab.id === 'dashboard' ? 'Home' : tab.name}</span>
                 </button>
               ))}
@@ -274,24 +259,16 @@ const ProductApp = () => {
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
-          <div className="space-y-6 md:space-y-8">
+          <div className="space-y-8">
             <DashboardStats signals={signals} blogs={blogs} />
             {isAdmin() ? (
-              <div className="px-2 md:px-0">
-                <AdminControls handleCreate={handleCreate} />
-              </div>
+              <AdminControls handleCreate={handleCreate} />
             ) : (
-              <div className="px-2 md:px-0">
-                <UserFeatures />
-              </div>
+              <UserFeatures />
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 px-2 md:px-0">
-              <div className="w-full">
-                <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
-              </div>
-              <div className="w-full">
-                <RecentBlogs blogs={blogs} formatDate={formatDate} />
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
+              <RecentBlogs blogs={blogs} formatDate={formatDate} />
             </div>
           </div>
         )}
@@ -338,6 +315,13 @@ const ProductApp = () => {
           darkMode={darkMode}
         />
 
+        {/* Welcome Popup */}
+        {showWelcomePopup && (
+          <WelcomePopup 
+            username={user?.username}
+            onClose={() => setShowWelcomePopup(false)}
+          />
+        )}
       </div>
     </div>
   );
