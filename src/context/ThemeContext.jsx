@@ -4,36 +4,43 @@ export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
-    // Get the saved theme from localStorage, default to dark if nothing saved
-    const savedTheme = localStorage.getItem("theme");
-    return savedTheme ? savedTheme === "dark" : true;
+    try {
+      // Get saved theme from localStorage, default to dark for finance app
+      const savedTheme = localStorage.getItem("theme");
+      return savedTheme ? savedTheme === "dark" : true;
+    } catch (error) {
+      console.error("Error accessing localStorage for theme:", error);
+      return true; // Fallback to dark mode
+    }
   });
 
   const toggleDarkMode = () => {
-    setDarkMode(prevMode => !prevMode);
+    setDarkMode((prevMode) => {
+      const newMode = !prevMode;
+      try {
+        localStorage.setItem("theme", newMode ? "dark" : "light");
+      } catch (error) {
+        console.error("Error saving theme to localStorage:", error);
+      }
+      return newMode;
+    });
   };
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (darkMode) {
-      root.classList.add("dark");
-      root.classList.remove("light");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.add("light");
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    root.classList.remove("light", "dark");
+    root.classList.add(darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  const themeName = darkMode ? "Market Night" : "Market Day";
+
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, themeName }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Create a custom hook for easy access
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

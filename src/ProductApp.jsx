@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
@@ -11,13 +11,8 @@ import SignalsList from "./components/SignalsList";
 import BlogsList from "./components/BlogsList";
 import ChartsTab from "./components/ChartsTab";
 import CreateEditModal from "./components/CreateEditModal";
-import WelcomePopup from "./components/WelcomePopup"; // You'll need to create this
-import {
-  Home,
-  Signal,
-  BookOpen,
-  BarChart,
-} from "lucide-react";
+import WelcomeToast from "./components/WelcomeToast";
+import { Home, Signal, BookOpen, BarChart } from "lucide-react";
 import { blogsAPI, signalsAPI } from "./utils/api";
 
 const ProductApp = () => {
@@ -25,8 +20,9 @@ const ProductApp = () => {
   const [blogs, setBlogs] = useState([]);
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(true); // Controls welcome popup
+  const [showWelcomeToast, setShowWelcomeToast] = useState(true);
   const [modalType, setModalType] = useState("blog");
   const [editingItem, setEditingItem] = useState(null);
   const { user, isAdmin, isPremium } = useAuth();
@@ -66,6 +62,7 @@ const ProductApp = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [blogsResponse, signalsResponse] = await Promise.all([
         blogsAPI.getAll(),
         signalsAPI.getAll(),
@@ -73,7 +70,8 @@ const ProductApp = () => {
       setBlogs(blogsResponse.data);
       setSignals(signalsResponse.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching market data:", error);
+      setError("Failed to load market data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -105,7 +103,7 @@ const ProductApp = () => {
       content: item.content || "",
       image: item.image || "",
       coin: item.coin || "",
-      direction: item.direction || "long",
+      direction: item.direction || "buy",
       entry_price: item.entry_price || "",
       leverage: item.leverage || "",
       stop_loss: item.stop_loss || "",
@@ -119,7 +117,7 @@ const ProductApp = () => {
   };
 
   const handleDelete = async (id, type) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
+    if (window.confirm("Confirm deletion of this trade signal or analysis?")) {
       try {
         if (type === "blog") {
           await blogsAPI.delete(id);
@@ -130,6 +128,7 @@ const ProductApp = () => {
         }
       } catch (error) {
         console.error("Error deleting item:", error);
+        setError("Failed to delete item. Please try again.");
       }
     }
   };
@@ -143,7 +142,6 @@ const ProductApp = () => {
           content: formData.content,
           image: formData.image,
         };
-
         if (editingItem) {
           await blogsAPI.update(editingItem.id, blogData);
           setBlogs(
@@ -165,7 +163,6 @@ const ProductApp = () => {
           targets: formData.targets,
           status: formData.status,
         };
-
         if (editingItem) {
           await signalsAPI.update(editingItem.id, signalData);
           setSignals(
@@ -183,6 +180,7 @@ const ProductApp = () => {
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error saving item:", error);
+      setError("Failed to save item. Please check your input and try again.");
     }
   };
 
@@ -197,65 +195,79 @@ const ProductApp = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "success":
-        return "text-[var(--color-accent1)] bg-[var(--color-accent1)]/20 border border-[var(--color-accent1)]/30";
+        return "text-positive bg-[var(--color-accent1)]/20 border border-[var(--color-accent1)]/30";
       case "fail":
-        return "text-[var(--color-secondary)] bg-[var(--color-secondary)]/20 border border-[var(--color-secondary)]/30";
+        return "text-negative bg-[var(--color-secondary)]/20 border border-[var(--color-secondary)]/30";
       case "pending":
         return "text-[var(--color-accent2)] bg-[var(--color-accent2)]/20 border border-[var(--color-accent2)]/30";
       default:
-        return "text-[var(--color-neutral-dark)]/60 bg-[var(--color-neutral-dark)]/10 border border-[var(--color-neutral-dark)]/20";
+        return "text-contrast-medium bg-[var(--color-neutral-dark)]/10 border border-[var(--color-neutral-dark)]/20";
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--color-neutral-light)] flex items-center justify-center">
-        <div className="text-center">
+        <div className="lego-card p-8 rounded-lg text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[var(--color-primary)] mx-auto"></div>
-          <p className="mt-4 text-[var(--color-neutral-dark)] font-medium">
-            Loading your dashboard...
+          <p className="mt-4 text-contrast-high font-medium text-lg">
+            Loading your wealth dashboard...
           </p>
         </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[var(--color-neutral-light)] flex items-center justify-center">
+        <div className="lego-card p-8 rounded-lg text-center">
+          <p className="text-negative text-lg font-medium">{error}</p>
+          <button
+            onClick={fetchData}
+            className="lego-button mt-4 px-6 py-2 bg-[var(--color-primary)] text-white rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--color-neutral-light)] transition-colors duration-300">
+    <div className="min-h-screen bg-[var(--color-neutral-light)] transition-colors duration-300 font-sans">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-24">
-        {/* Navigation Tabs - Theme Responsive */}
-        <div className="mb-8 px-2 md:px-0">
-          <div className="overflow-x-auto pb-2">
-            <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
-              {[
-                { id: "dashboard", name: "Dashboard", icon: Home },
-                { id: "signals", name: "Signals", icon: Signal },
-                { id: "blogs", name: "Analysis", icon: BookOpen },
-                { id: "charts", name: "Charts", icon: BarChart },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`lego-button flex-shrink-0 flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 font-sans ${
-                    activeTab === tab.id
-                      ? "bg-[var(--color-primary)] text-white border-b-4 border-[var(--color-primary-dark)]"
-                      : "bg-[var(--color-card-bg)] text-[var(--color-text-primary)] border-b-4 border-[var(--color-card-bg)] hover:border-b-4 hover:border-[var(--color-primary)]/30"
-                  }`}
-                  style={{
-                    boxShadow: activeTab === tab.id 
-                      ? '0 4px 6px rgba(var(--color-primary-rgb), 0.2)' 
-                      : '0 4px 6px rgba(var(--color-neutral-dark-rgb), 0.1)'
-                  }}
-                >
-                  <tab.icon className="h-5 w-5" />
-                  <span className="whitespace-nowrap">{tab.id === 'dashboard' ? 'Home' : tab.name}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
+
+{/* Navigation Tabs */}
+<div className="mb-8 bg-[var(--color-neutral-light)]">
+  <div className="overflow-x-auto">
+    <nav
+      className="grid grid-cols-2 sm:flex sm:space-x-2 md:space-x-4 gap-2 px-2 md:px-0"
+    >
+      {[
+        { id: "dashboard", name: "Dashboard", icon: Home },
+        { id: "signals", name: "Trade Signals", icon: Signal },
+        { id: "blogs", name: "Market Analysis", icon: BookOpen },
+        { id: "charts", name: "Price Charts", icon: BarChart },
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`lego-button flex items-center justify-center space-x-2 px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
+            activeTab === tab.id
+              ? "bg-[var(--color-primary)] text-white border-b-4 border-[var(--color-border-dark)]"
+              : "bg-[var(--color-card-bg)] text-contrast-high border-b-4 border-[var(--color-border-light)] hover:border-[var(--color-border-hover)]"
+          }`}
+        >
+          <tab.icon className="h-5 w-5" />
+          <span className="whitespace-nowrap text-sm sm:text-base">{tab.name}</span>
+        </button>
+      ))}
+    </nav>
+  </div>
+</div>
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
@@ -264,10 +276,14 @@ const ProductApp = () => {
             {isAdmin() ? (
               <AdminControls handleCreate={handleCreate} />
             ) : (
-              <UserFeatures />
+              <UserFeatures isPremium={isPremium} isFree={isFree} />
             )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <RecentSignals signals={signals} getStatusColor={getStatusColor} formatDate={formatDate} />
+              <RecentSignals
+                signals={signals}
+                getStatusColor={getStatusColor}
+                formatDate={formatDate}
+              />
               <RecentBlogs blogs={blogs} formatDate={formatDate} />
             </div>
           </div>
@@ -301,7 +317,9 @@ const ProductApp = () => {
         )}
 
         {/* Charts Tab */}
-        {activeTab === "charts" && <ChartsTab />}
+        {activeTab === "charts" && (
+          <ChartsTab isPremium={isPremium} isFree={isFree} />
+        )}
 
         {/* Create/Edit Modal */}
         <CreateEditModal
@@ -316,10 +334,10 @@ const ProductApp = () => {
         />
 
         {/* Welcome Popup */}
-        {showWelcomePopup && (
-          <WelcomePopup 
+        {showWelcomeToast && (
+          <WelcomeToast
             username={user?.username}
-            onClose={() => setShowWelcomePopup(false)}
+            onClose={() => setShowWelcomeToast(false)}
           />
         )}
       </div>

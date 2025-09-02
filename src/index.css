@@ -1,46 +1,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
 
 :root {
-  /* Muted Retro Pastels */
-  --color-primary: #7B9ACC;
-  --color-secondary: #FFA99E;
-  --color-accent1: #9CD9D2;
-  --color-accent2: #FFD6AA;
-  --color-neutral-dark: #5A5B7E;
-  --color-neutral-light: #F5F3F0;
+  /* Vibrant Retro Pastels */
+  --color-primary: #5B7BDA;      /* Stronger blue */
+  --color-secondary: #FF7A6B;    /* Vivid coral */
+  --color-accent1: #4EC9B0;      /* Bright teal-mint */
+  --color-accent2: #FFC857;      /* Warm golden yellow */
+  --color-neutral-dark: #44446A; /* Deep slate */
+  --color-neutral-light: #FDFCF9;/* Crisp near-white */
   
   /* Border colors */
-  --color-border-light: rgba(90, 91, 126, 0.2);
-  --color-border-dark: rgba(90, 91, 126, 0.3);
-  --color-border-hover: rgba(123, 154, 204, 0.4);
+  --color-border-light: rgba(68, 68, 106, 0.2);
+  --color-border-dark: rgba(68, 68, 106, 0.35);
+  --color-border-hover: rgba(91, 123, 218, 0.5);
   
   /* Component variables */
   --color-card-bg: #FFFFFF;
-  --color-card-hover: #F8F6F2;
-  --color-text-primary: #5A5B7E;
-  --color-text-secondary: #5A5B7E;
-  --card-shadow: 0 4px 6px rgba(90, 91, 126, 0.1);
+  --color-card-hover: #F4F2EE;
+  --color-text-primary: #2D2D4F;
+  --color-text-secondary: #555577;
+  --card-shadow: 0 4px 8px rgba(68, 68, 106, 0.15);
 }
 
 .dark {
-  --color-primary: #95B5E8;
-  --color-secondary: #FFC4BC;
-  --color-accent1: #B8ECE6;
-  --color-accent2: #FFE4C4;
-  --color-neutral-dark: #D4D4E8;
-  --color-neutral-light: #35364A;
+  --color-primary: #88A7FF;      /* Vibrant periwinkle */
+  --color-secondary: #FF9A8A;    /* Bright salmon */
+  --color-accent1: #66E0C0;      /* Electric mint */
+  --color-accent2: #FFD67A;      /* Sunny pastel yellow */
+  --color-neutral-dark: #E2E2F2; /* Soft lavender gray */
+  --color-neutral-light: #2B2C3E;/* Rich dark navy */
   
   /* Border colors */
-  --color-border-light: rgba(212, 212, 232, 0.2);
-  --color-border-dark: rgba(212, 212, 232, 0.3);
-  --color-border-hover: rgba(149, 181, 232, 0.4);
+  --color-border-light: rgba(226, 226, 242, 0.2);
+  --color-border-dark: rgba(226, 226, 242, 0.35);
+  --color-border-hover: rgba(136, 167, 255, 0.5);
   
   /* Component variables */
-  --color-card-bg: #2A2B45;
-  --color-card-hover: #3A3B55;
-  --color-text-primary: #D4D4E8;
-  --color-text-secondary: #A8A8C6;
-  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --color-card-bg: #222335;
+  --color-card-hover: #2E2F45;
+  --color-text-primary: #E8E8FA;
+  --color-text-secondary: #B0B0CC;
+  --card-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
 }
 
 /* Apply base styles */
