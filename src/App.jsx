@@ -169,17 +169,17 @@ const AppContent = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       <div className="absolute top-4 right-4 z-50">
-        <button
+        {/* <button
           onClick={toggleTheme}
           className="lego-button p-2 bg-[var(--color-neutral-dark)]/50 hover:bg-[var(--color-primary)]/20 border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] rounded-lg text-contrast-high transition-all duration-200"
           aria-label={`Switch to ${themeName === "Market Day" ? "Market Night" : "Market Day"} theme`}
-        >
-          {themeName === "Market Day" ? (
+        > */}
+          {/* {themeName === "Market Day" ? (
             <Moon className="h-5 w-5" />
           ) : (
             <Sun className="h-5 w-5" />
           )}
-        </button>
+        </button> */}
       </div>
       <main className="flex-grow flex items-start md:items-center justify-center p-4 overflow-y-auto">
         <motion.div
@@ -551,4 +551,4 @@ const App = () => (
   </ThemeProvider>
 );
 
-export default App;
+export default App; 

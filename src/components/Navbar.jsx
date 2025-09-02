@@ -173,7 +173,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu (unchanged) */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -183,7 +183,48 @@ const Navbar = () => {
             exit="closed"
             variants={menuVariants}
           >
-            {/* your mobile menu content here */}
+            <div className="px-4 py-3 space-y-4">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => {
+                  toggleDarkMode();
+                  toggleMenu();
+                }}
+                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-[var(--color-primary)]/10 transition-colors"
+              >
+                {darkMode ? (
+                  <Sun className="h-5 w-5 text-[var(--color-accent2)]" />
+                ) : (
+                  <Moon className="h-5 w-5 text-[var(--color-primary)]" />
+                )}
+                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </button>
+
+              {/* Profile Section */}
+              <div className="pt-2 border-t border-[var(--color-border-light)]">
+                <div className="flex items-center space-x-3 px-3 py-2">
+                  <div className="h-10 w-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-[var(--color-primary)]" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{user?.username || 'Trader'}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">View Profile</p>
+                  </div>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    toggleMenu();
+                    logout();
+                  }}
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 transition-colors mt-2"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

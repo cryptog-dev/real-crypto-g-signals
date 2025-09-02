@@ -243,9 +243,7 @@ const ProductApp = () => {
 {/* Navigation Tabs */}
 <div className="mb-8 bg-[var(--color-neutral-light)]">
   <div className="overflow-x-auto">
-    <nav
-      className="grid grid-cols-2 sm:flex sm:space-x-2 md:space-x-4 gap-2 px-2 md:px-0"
-    >
+    <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
       {[
         { id: "dashboard", name: "Dashboard", icon: Home },
         { id: "signals", name: "Trade Signals", icon: Signal },
@@ -255,14 +253,14 @@ const ProductApp = () => {
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
-          className={`lego-button flex items-center justify-center space-x-2 px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
+          className={`lego-button flex-shrink-0 flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
             activeTab === tab.id
               ? "bg-[var(--color-primary)] text-white border-b-4 border-[var(--color-border-dark)]"
               : "bg-[var(--color-card-bg)] text-contrast-high border-b-4 border-[var(--color-border-light)] hover:border-[var(--color-border-hover)]"
           }`}
         >
           <tab.icon className="h-5 w-5" />
-          <span className="whitespace-nowrap text-sm sm:text-base">{tab.name}</span>
+          <span className="whitespace-nowrap">{tab.name}</span>
         </button>
       ))}
     </nav>
