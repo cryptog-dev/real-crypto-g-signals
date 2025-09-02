@@ -240,8 +240,8 @@ const ProductApp = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-24">
 
-{/* Navigation Tabs */}
-<div className="mb-8 bg-[var(--color-neutral-light)]">
+{/* Navigation Tabs - Desktop */}
+<div className="hidden md:block mb-8 bg-[var(--color-neutral-light)]">
   <div className="overflow-x-auto">
     <nav className="flex space-x-2 md:space-x-4 px-2 md:px-0 w-max max-w-full mx-auto">
       {[
@@ -266,6 +266,31 @@ const ProductApp = () => {
     </nav>
   </div>
 </div>
+
+{/* Mobile Bottom Nav */}
+<div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-card-bg)] border-t border-[var(--color-border-light)] flex justify-around py-2 z-50">
+  {[
+    { id: "dashboard", name: "Dashboard", icon: Home },
+    { id: "signals", name: "Signals", icon: Signal },
+    { id: "blogs", name: "Blogs", icon: BookOpen },
+    { id: "charts", name: "Charts", icon: BarChart },
+  ].map((tab) => (
+    <button
+      key={tab.id}
+      onClick={() => setActiveTab(tab.id)}
+      className={`flex flex-col items-center text-xs transition-colors ${
+        activeTab === tab.id
+          ? "text-[var(--color-primary)]"
+          : "text-contrast-medium hover:text-[var(--color-primary)]"
+      }`}
+    >
+      <tab.icon className="h-6 w-6 mb-0.5" />
+      <span>{tab.name}</span>
+    </button>
+  ))}
+</div>
+
+
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
