@@ -149,20 +149,14 @@ const CreateEditModal = ({
                 <label className={labelClass}>
                   <TrendingUp className="h-4 w-4 text-[var(--color-primary)]" /> Trading Pair
                 </label>
-                <select
+                <input
+                  type="text"
                   value={formData.coin || ""}
                   onChange={(e) => setFormData({ ...formData, coin: e.target.value })}
                   className={inputClass}
+                  placeholder="e.g., BTC/USDT"
                   required
-                >
-                  <option value="">Select trading pair</option>
-                  <option value="BTC/USDT">BTC/USDT</option>
-                  <option value="ETH/USDT">ETH/USDT</option>
-                  <option value="ADA/USDT">ADA/USDT</option>
-                  <option value="SOL/USDT">SOL/USDT</option>
-                  <option value="DOT/USDT">DOT/USDT</option>
-                  <option value="BNB/USDT">BNB/USDT</option>
-                </select>
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

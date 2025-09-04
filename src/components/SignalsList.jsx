@@ -1,39 +1,125 @@
-import React from "react";
-import { Plus, Edit3, Trash2, Clock, TrendingUp, Lock, Target } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Plus, Edit3, Trash2, Clock, TrendingUp, Lock, Target, Filter, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handleDelete, getStatusColor, formatDate, isPremium }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filters, setFilters] = useState({
+    status: searchParams.get("status")?.toLowerCase() || "all",
+    direction: "all",
+    coin: "all",
+  });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Handle clicks outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sync status filter with query parameter
+  useEffect(() => {
+    const currentStatus = searchParams.get("status")?.toLowerCase() || "all";
+    if (currentStatus !== filters.status) {
+      setFilters((prev) => ({ ...prev, status: currentStatus }));
+    }
+  }, [searchParams]);
+
+  // Filter signals based on selected filters
+  const filteredSignals = signals.filter((signal) => {
+    const matchesStatus = filters.status === "all" || signal.status.toLowerCase() === filters.status.toLowerCase();
+    const matchesDirection = filters.direction === "all" || signal.direction.toLowerCase() === filters.direction.toLowerCase();
+    const matchesCoin = filters.coin === "all" || signal.coin.toLowerCase() === filters.coin.toLowerCase();
+    return matchesStatus && matchesDirection && matchesCoin;
+  });
+
+  // Get unique coins for filter options
+  const uniqueCoins = [...new Set(signals.map((signal) => signal.coin))].sort();
+
+  // Handle filter change
+  const handleFilterChange = (type, value) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev, [type]: value };
+      if (type === "status") {
+        if (value === "all") {
+          setSearchParams({});
+        } else {
+          setSearchParams({ status: value });
+        }
+      }
+      return newFilters;
+    });
+    setIsDropdownOpen(false); // Close dropdown after selection
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({ status: "all", direction: "all", coin: "all" });
+    setSearchParams({});
+  };
+
+  // Count active filters
+  const activeFilterCount = Object.values(filters).filter((value) => value !== "all").length;
+
   const canViewTargets = () => isPremium() || isAdmin();
 
   const parseTargets = (targetsString) => {
-    if (!targetsString) return {};
+    if (!targetsString) return [];
     try {
-      if (typeof targetsString === "object") return targetsString;
+      if (typeof targetsString === "object") {
+        return Object.entries(targetsString).map(([price, status]) => ({ price, status }));
+      }
       try {
-        return JSON.parse(targetsString);
+        const parsed = JSON.parse(targetsString);
+        return Object.entries(parsed).map(([price, status]) => ({ price, status }));
       } catch (jsonError) {
         if (typeof targetsString === "string" && targetsString.includes(",")) {
-          const targets = {};
           const prices = targetsString
             .split(",")
             .map((price) => price.trim())
             .filter((price) => price);
-          prices.forEach((price, index) => {
+          return prices.map((price, index) => {
             const normalizedPrice = parseFloat(price);
-            if (!isNaN(normalizedPrice)) {
-              targets[normalizedPrice.toString()] = "pending";
-            }
+            return {
+              price: isNaN(normalizedPrice) ? price : normalizedPrice.toString(),
+              status: "pending",
+            };
           });
-          return targets;
         }
         const singlePrice = parseFloat(targetsString);
         if (!isNaN(singlePrice)) {
-          return { [singlePrice.toString()]: "pending" };
+          return [{ price: singlePrice.toString(), status: "pending" }];
         }
         throw jsonError;
       }
     } catch (error) {
       console.warn("Failed to parse targets:", targetsString, error);
-      return {};
+      return [];
+    }
+  };
+
+  const getResultText = (signal) => {
+    const targets = parseTargets(signal.targets);
+    const hitTargets = targets.filter((t) => t.status === "hit");
+    const allHit = targets.length > 0 && hitTargets.length === targets.length;
+    const hasStopLoss = signal.stop_loss && parseFloat(signal.stop_loss) > 0;
+
+    if (signal.status === "success" && allHit) {
+      return { text: "All Targets Hit", color: "text-[var(--color-accent1)]" };
+    } else if (signal.status === "success" && hitTargets.length > 0) {
+      const hitIndices = hitTargets.map((_, i) => `T${i + 1}`);
+      return { text: `Targets ${hitIndices.join(", ")} Hit`, color: "text-[var(--color-accent1)]" };
+    } else if (signal.status === "fail" && hasStopLoss && hitTargets.length === 0) {
+      return { text: "Stop Loss Hit", color: "text-[var(--color-secondary)]" };
+    } else {
+      return { text: "Awaiting Result", color: "text-[var(--color-text-secondary)]" };
     }
   };
 
@@ -42,12 +128,10 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     const entry = parseFloat(entryPrice);
     const target = parseFloat(targetPrice);
     const lev = parseFloat(leverage);
-
     const priceChange =
       direction === "buy"
         ? ((target - entry) / entry) * 100
         : ((entry - target) / entry) * 100;
-
     return (priceChange * lev).toFixed(1);
   };
 
@@ -56,37 +140,179 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     const entry = parseFloat(entryPrice);
     const sl = parseFloat(stopLoss);
     const lev = parseFloat(leverage);
-
     const priceChange =
       direction === "buy"
         ? ((sl - entry) / entry) * 100
         : ((entry - sl) / entry) * 100;
-
     return (priceChange * lev).toFixed(1);
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-[var(--color-primary)] font-heading">
             Trading Signals
           </h2>
-          <p className="text-contrast-medium text-sm mt-1">
-            {signals.length} signal{signals.length !== 1 ? "s" : ""} available
+          <p className="text-contrast-medium text-xs sm:text-sm mt-1">
+            {filteredSignals.length} signal{filteredSignals.length !== 1 ? "s" : ""} available
+            {activeFilterCount > 0 && ` (filtered by ${activeFilterCount} ${activeFilterCount === 1 ? "filter" : "filters"})`}
           </p>
         </div>
-        {isAdmin() && (
-          <button
-            onClick={() => handleCreate("signal")}
-            className="lego-button flex items-center space-x-2 px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Signal</span>
-          </button>
-        )}
+        <div className="flex items-center space-x-3">
+          {/* Custom Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <motion.button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="lego-button flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-light hover:border-hover bg-[var(--color-card-bg)] rounded-lg text-xs sm:text-sm text-contrast-high focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              aria-label="Filter signals"
+              aria-expanded={isDropdownOpen}
+              aria-controls="filter-dropdown"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-primary)]" />
+              <span>Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
+            </motion.button>
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  id="filter-dropdown"
+                  className="absolute top-full left-0 sm:right-0 mt-2 w-full max-w-[90vw] sm:w-64 min-w-[200px] bg-[var(--color-card-bg)] lego-card border border-light rounded-lg shadow-lg z-60 p-3 sm:p-4 overflow-x-auto"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="space-y-4">
+                    {/* Status Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-contrast-high font-sans mb-1 block">
+                        Status
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["all", "pending", "success", "fail"].map((status) => (
+                          <motion.button
+                            key={status}
+                            onClick={() => handleFilterChange("status", status)}
+                            className={`lego-button py-1.5 px-2 text-xs rounded-md text-contrast-high ${
+                              filters.status === status
+                                ? "bg-[var(--color-primary)] text-white"
+                                : "bg-[var(--color-card-bg)] hover:bg-[var(--color-card-hover)] border border-light"
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Direction Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-contrast-high font-sans mb-1 block">
+                        Direction
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["all", "buy", "sell"].map((dir) => (
+                          <motion.button
+                            key={dir}
+                            onClick={() => handleFilterChange("direction", dir)}
+                            className={`lego-button py-1.5 px-2 text-xs rounded-md text-contrast-high ${
+                              filters.direction === dir
+                                ? "bg-[var(--color-primary)] text-white"
+                                : "bg-[var(--color-card-bg)] hover:bg-[var(--color-card-hover)] border border-light"
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {dir.charAt(0).toUpperCase() + dir.slice(1)}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Coin Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-contrast-high font-sans mb-1 block">
+                        Coin
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["all", ...uniqueCoins].slice(0, 6).map((coin) => (
+                          <motion.button
+                            key={coin}
+                            onClick={() => handleFilterChange("coin", coin)}
+                            className={`lego-button py-1.5 px-2 text-xs rounded-md text-contrast-high ${
+                              filters.coin === coin
+                                ? "bg-[var(--color-primary)] text-white"
+                                : "bg-[var(--color-card-bg)] hover:bg-[var(--color-card-hover)] border border-light"
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {coin.charAt(0).toUpperCase() + coin.slice(1)}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Clear Filters */}
+                    {activeFilterCount > 0 && (
+                      <motion.button
+                        onClick={clearFilters}
+                        className="lego-button w-full py-1.5 px-3 text-xs sm:text-sm bg-[var(--color-secondary)] text-white rounded-md hover:bg-[var(--color-secondary)]/90"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <X className="h-4 w-4 inline mr-1" />
+                        Clear Filters
+                      </motion.button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          {isAdmin() && (
+            <motion.button
+              onClick={() => handleCreate("signal")}
+              className="lego-button flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium whitespace-nowrap text-xs sm:text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Create Signal</span>
+            </motion.button>
+          )}
+        </div>
       </div>
+
+      {/* Active Filters */}
+      {activeFilterCount > 0 && (
+        <motion.div
+          className="flex flex-wrap gap-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {Object.entries(filters).map(([key, value]) =>
+            value !== "all" ? (
+              <span
+                key={key}
+                className="flex items-center px-2 py-1 text-xs bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-full"
+              >
+                {key.charAt(0).toUpperCase() + key.slice(1)}: {value.charAt(0).toUpperCase() + value.slice(1)}
+                <button
+                  onClick={() => handleFilterChange(key, "all")}
+                  className="ml-1.5 focus:outline-none"
+                  aria-label={`Remove ${key} filter`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ) : null
+          )}
+        </motion.div>
+      )}
 
       {/* Premium Upgrade Banner */}
       {isFree() && (
@@ -96,30 +322,34 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
               <Lock className="h-5 w-5 text-[var(--color-primary)]" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-[var(--color-primary)] text-sm font-heading">
+              <h3 className="font-semibold text-[var(--color-primary)] text-xs sm:text-sm font-heading">
                 Unlock Premium Features
               </h3>
               <p className="text-contrast-medium text-xs mt-1">
-                Get access to ROI calculations, stop loss levels, and target
-                prices.
+                Get access to ROI calculations, stop loss levels, and target prices.
               </p>
             </div>
-            <button className="lego-button px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg text-xs font-medium">
+            <motion.button
+              className="lego-button px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg text-xs font-medium"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               Upgrade
-            </button>
+            </motion.button>
           </div>
         </div>
       )}
 
       {/* Signals Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-        {signals.map((signal) => {
+        {filteredSignals.map((signal) => {
           const stopLossROI = calculateStopLossROI(
             signal.stop_loss,
             signal.entry_price,
             signal.leverage,
             signal.direction
           );
+          const result = getResultText(signal);
 
           return (
             <div key={signal.id} className="lego-card group">
@@ -147,13 +377,24 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                       {signal.direction.toUpperCase()}
                     </span>
                   </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      signal.status
-                    )}`}
-                  >
-                    {signal.status.toUpperCase()}
-                  </span>
+                  <div className="flex flex-col items-end space-y-1">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        signal.status
+                      )}`}
+                    >
+                      {signal.status.toUpperCase()}
+                    </span>
+                    <motion.span
+                      className={`text-xs font-sans ${result.color}`}
+                      aria-label={`Result: ${result.text}`}
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {result.text}
+                    </motion.span>
+                  </div>
                 </div>
 
                 {/* Details */}
@@ -196,7 +437,7 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                           ? `$${signal.stop_loss.toLocaleString()}`
                           : "N/A"
                       ) : (
-                        <span className="flex items-center text-contrast-medium text-sm">
+                        <span className="flex items-center text-contrast-medium text-xs">
                           <Lock className="w-3 h-3 mr-1" />
                           Premium
                         </span>
@@ -223,9 +464,7 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                       <div className="space-y-2">
                         {(() => {
                           const targets = parseTargets(signal.targets);
-                          const targetEntries = Object.entries(targets);
-
-                          if (targetEntries.length === 0) {
+                          if (targets.length === 0) {
                             return (
                               <div className="text-xs text-contrast-medium italic">
                                 No targets set
@@ -233,7 +472,7 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                             );
                           }
 
-                          return targetEntries.slice(0, 3).map(([price, status], i) => {
+                          return targets.slice(0, 3).map(({ price, status }, i) => {
                             const targetROI = calculateROI(
                               price,
                               signal.entry_price,
@@ -315,20 +554,24 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
 
                   {isAdmin() && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <motion.button
                         onClick={() => handleEdit(signal, "signal")}
                         className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
                         title="Edit Signal"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                       >
                         <Edit3 className="h-3 w-3" />
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
                         onClick={() => handleDelete(signal.id, "signal")}
                         className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
                         title="Delete Signal"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                       >
                         <Trash2 className="h-3 w-3" />
-                      </button>
+                      </motion.button>
                     </div>
                   )}
                 </div>
@@ -339,7 +582,7 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
       </div>
 
       {/* Empty State */}
-      {signals.length === 0 && (
+      {filteredSignals.length === 0 && (
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 lego-card rounded-full flex items-center justify-center">
             <TrendingUp className="w-8 h-8 text-contrast-medium" />
@@ -347,17 +590,19 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
           <h3 className="text-lg font-semibold text-contrast-high mb-2 font-heading">
             No signals yet
           </h3>
-          <p className="text-contrast-medium text-sm mb-4">
+          <p className="text-contrast-medium text-xs sm:text-sm mb-4">
             Trading signals will appear here once created.
           </p>
           {isAdmin() && (
-            <button
+            <motion.button
               onClick={() => handleCreate("signal")}
-              className="lego-button flex items-center space-x-2 px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium mx-auto"
+              className="lego-button flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium mx-auto text-xs sm:text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               <span>Create First Signal</span>
-            </button>
+            </motion.button>
           )}
         </div>
       )}
