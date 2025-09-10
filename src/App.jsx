@@ -6,7 +6,6 @@ import Footer from "./components/Footer";
 import ProductApp from "./ProductApp";
 import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FcGoogle } from "react-icons/fc";
 import Logo2 from "./assets/logo2.png";
 
 

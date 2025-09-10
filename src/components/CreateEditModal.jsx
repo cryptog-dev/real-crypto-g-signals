@@ -42,11 +42,28 @@ const CreateEditModal = ({
   };
 
   const addTarget = () => {
-    const currentTargets = formData.targets ? formData.targets.split(',').map(t => t.trim()) : [];
+    let currentTargetsObj = {};
+    
+    try {
+      if (formData.targets) {
+        // Try to parse as JSON first
+        currentTargetsObj = JSON.parse(formData.targets);
+      }
+    } catch (e) {
+      // If JSON parsing fails, try parsing as comma-separated values
+      if (formData.targets) {
+        const targetArray = formData.targets.split(',').map(t => t.trim()).filter(t => t);
+        targetArray.forEach(target => {
+          currentTargetsObj[target] = 'pending';
+        });
+      }
+    }
+    
     const entryPrice = parseFloat(formData.entry_price || 0);
     const newTarget = (entryPrice * 1.05).toFixed(2);
-    const updatedTargets = [...currentTargets, newTarget].join(', ');
-    setFormData({ ...formData, targets: updatedTargets });
+    currentTargetsObj[newTarget] = 'pending';
+    
+    setFormData({ ...formData, targets: JSON.stringify(currentTargetsObj) });
   };
 
   return (
@@ -261,16 +278,27 @@ const CreateEditModal = ({
 
                 {showTargetHelper && (
                   <div className="bg-[var(--color-primary)]/10 border border-[var(--color-border-light)] rounded-lg p-3 mb-2 text-sm text-[var(--color-primary)] font-sans">
-                    Enter comma-separated target prices (e.g., 45000, 47000, 49000)
+                    <div className="space-y-2">
+                      <div className="font-medium">Enter targets in JSON format with price:status pairs:</div>
+                      <div className="text-xs opacity-80">
+                        Example: {'{"45000": "pending", "47000": "hit", "49000": "pending"}'}
+                      </div>
+                      <div className="text-xs opacity-80">
+                        Status options: "pending", "hit", "fail"
+                      </div>
+                      <div className="text-xs opacity-80">
+                        Legacy format (comma-separated) is also supported: "45000, 47000, 49000"
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <input
-                  type="text"
+                <textarea
+                  rows={3}
                   value={formData.targets || ""}
                   onChange={(e) => setFormData({ ...formData, targets: e.target.value })}
                   className={inputClass}
-                  placeholder="45000, 47000, 49000"
+                  placeholder='{"45000": "pending", "47000": "hit", "49000": "pending"}'
                   required
                 />
               </div>

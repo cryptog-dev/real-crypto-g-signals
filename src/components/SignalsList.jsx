@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Edit3, Trash2, Clock, TrendingUp, Lock, Target, Filter, X } from "lucide-react";
+import { Plus, Edit3, Trash2, Clock, TrendingUp, Lock, Target, Filter, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import * as htmlToImage from "html-to-image";
 
 const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handleDelete, getStatusColor, formatDate, isPremium }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,7 +14,9 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Handle clicks outside dropdown to close it
+  // NEW: refs map for cards
+  const cardRefs = useRef({});
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -24,7 +27,6 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sync status filter with query parameter
   useEffect(() => {
     const currentStatus = searchParams.get("status")?.toLowerCase() || "all";
     if (currentStatus !== filters.status) {
@@ -32,7 +34,6 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     }
   }, [searchParams]);
 
-  // Filter signals based on selected filters
   const filteredSignals = signals.filter((signal) => {
     const matchesStatus = filters.status === "all" || signal.status.toLowerCase() === filters.status.toLowerCase();
     const matchesDirection = filters.direction === "all" || signal.direction.toLowerCase() === filters.direction.toLowerCase();
@@ -40,10 +41,8 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     return matchesStatus && matchesDirection && matchesCoin;
   });
 
-  // Get unique coins for filter options
   const uniqueCoins = [...new Set(signals.map((signal) => signal.coin))].sort();
 
-  // Handle filter change
   const handleFilterChange = (type, value) => {
     setFilters((prev) => {
       const newFilters = { ...prev, [type]: value };
@@ -56,49 +55,68 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
       }
       return newFilters;
     });
-    setIsDropdownOpen(false); // Close dropdown after selection
+    setIsDropdownOpen(false);
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({ status: "all", direction: "all", coin: "all" });
     setSearchParams({});
   };
 
-  // Count active filters
   const activeFilterCount = Object.values(filters).filter((value) => value !== "all").length;
-
   const canViewTargets = () => isPremium() || isAdmin();
 
-  const parseTargets = (targetsString) => {
+  /* ---------- Parsing / ROI helpers (unchanged) ---------- */
+  const parseTargets = (targetsString, direction = 'buy') => {
     if (!targetsString) return [];
     try {
-      if (typeof targetsString === "object") {
-        return Object.entries(targetsString).map(([price, status]) => ({ price, status }));
-      }
-      try {
-        const parsed = JSON.parse(targetsString);
-        return Object.entries(parsed).map(([price, status]) => ({ price, status }));
-      } catch (jsonError) {
-        if (typeof targetsString === "string" && targetsString.includes(",")) {
-          const prices = targetsString
-            .split(",")
-            .map((price) => price.trim())
-            .filter((price) => price);
-          return prices.map((price, index) => {
-            const normalizedPrice = parseFloat(price);
-            return {
-              price: isNaN(normalizedPrice) ? price : normalizedPrice.toString(),
+      let targets = [];
+      if (typeof targetsString === "object" && targetsString !== null) {
+        targets = Object.entries(targetsString).map(([price, status], index) => ({
+          label: `T${index + 1}`,
+          price: price,
+          status: status || "pending",
+          numericPrice: parseFloat(price) || 0
+        }));
+      } else if (typeof targetsString === "string") {
+        try {
+          const parsed = JSON.parse(targetsString);
+          if (typeof parsed === "object" && !Array.isArray(parsed) && parsed !== null) {
+            targets = Object.entries(parsed).map(([price, status], index) => ({
+              label: `T${index + 1}`,
+              price: price,
+              status: status || "pending",
+              numericPrice: parseFloat(price) || 0
+            }));
+          }
+        } catch (jsonError) {
+          if (targetsString.includes(",")) {
+            targets = targetsString
+              .split(",")
+              .map(price => price.trim())
+              .filter(price => price)
+              .map((price, index) => ({
+                label: `T${index + 1}`,
+                price: price,
+                status: "pending",
+                numericPrice: parseFloat(price) || 0
+              }));
+          } else if (targetsString.trim()) {
+            targets = [{
+              label: "T1",
+              price: targetsString.trim(),
               status: "pending",
-            };
-          });
+              numericPrice: parseFloat(targetsString.trim()) || 0
+            }];
+          }
         }
-        const singlePrice = parseFloat(targetsString);
-        if (!isNaN(singlePrice)) {
-          return [{ price: singlePrice.toString(), status: "pending" }];
-        }
-        throw jsonError;
       }
+      const sortedTargets = [...targets].sort((a, b) => {
+        return direction === 'buy' 
+          ? a.numericPrice - b.numericPrice
+          : b.numericPrice - a.numericPrice;
+      });
+      return sortedTargets.map((target, index) => ({ ...target, label: `T${index + 1}`}));
     } catch (error) {
       console.warn("Failed to parse targets:", targetsString, error);
       return [];
@@ -108,16 +126,20 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
   const getResultText = (signal) => {
     const targets = parseTargets(signal.targets);
     const hitTargets = targets.filter((t) => t.status === "hit");
+    const failedTargets = targets.filter((t) => t.status === "fail");
     const allHit = targets.length > 0 && hitTargets.length === targets.length;
     const hasStopLoss = signal.stop_loss && parseFloat(signal.stop_loss) > 0;
 
     if (signal.status === "success" && allHit) {
       return { text: "All Targets Hit", color: "text-[var(--color-accent1)]" };
     } else if (signal.status === "success" && hitTargets.length > 0) {
-      const hitIndices = hitTargets.map((_, i) => `T${i + 1}`);
-      return { text: `Targets ${hitIndices.join(", ")} Hit`, color: "text-[var(--color-accent1)]" };
-    } else if (signal.status === "fail" && hasStopLoss && hitTargets.length === 0) {
+      const hitTargetLabels = targets.filter((t) => t.status === "hit").map((t) => t.label);
+      return { text: `${hitTargetLabels.join(", ")} Hit`, color: "text-[var(--color-accent1)]" };
+    } else if (signal.status === "fail" && hasStopLoss) {
       return { text: "Stop Loss Hit", color: "text-[var(--color-secondary)]" };
+    } else if (hitTargets.length > 0 && signal.status === "pending") {
+      const hitTargetLabels = targets.filter((t) => t.status === "hit").map((t) => t.label);
+      return { text: `${hitTargetLabels.join(", ")} Hit`, color: "text-[var(--color-accent1)]" };
     } else {
       return { text: "Awaiting Result", color: "text-[var(--color-text-secondary)]" };
     }
@@ -147,6 +169,32 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
     return (priceChange * lev).toFixed(1);
   };
 
+  /* ---------- NEW: download logic ---------- */
+  const handleDownload = async (id) => {
+    const node = cardRefs.current[id];
+    if (node) {
+      try {
+        // detect background color of the card
+        const computedStyle = getComputedStyle(node);
+        const bgColor = computedStyle.backgroundColor || "#000000"; // fallback for dark mode
+  
+        const dataUrl = await htmlToImage.toPng(node, {
+          quality: 1,
+          cacheBust: true,
+          useCORS: true,
+          backgroundColor: bgColor, // match card’s actual background
+        });
+  
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `signal-${id}.png`;
+        link.click();
+      } catch (error) {
+        console.error("Download failed:", error);
+      }
+    }
+  };
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -352,46 +400,38 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
           const result = getResultText(signal);
 
           return (
-            <div key={signal.id} className="lego-card group">
+            <div
+              key={signal.id}
+              id={`signal-card-${signal.id}`}
+              ref={(el) => (cardRefs.current[signal.id] = el)} // store ref
+              className="lego-card group"
+            >
               <div className="p-5">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-2">
                     <div
-                      className={`w-2 h-2 rounded-full ${
-                        signal.direction === "buy"
-                          ? "bg-[var(--color-accent1)]"
-                          : "bg-[var(--color-secondary)]"
-                      }`}
+                      className={`w-2 h-2 rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]" : "bg-[var(--color-secondary)]"}`}
                     />
-                    <span className="text-lg font-bold text-contrast-high">
-                      {signal.coin}
-                    </span>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        signal.direction === "buy"
-                          ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
-                          : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
-                      }`}
-                    >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+                      <img
+                        src={`/assets/${signal.coin.toLowerCase()}.svg`}
+                        alt={`${signal.coin} icon`}
+                        className="w-5 h-5 object-contain"
+                        onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                        crossOrigin="anonymous" // <--- important for html-to-image
+                      />
+                    </div>
+                    <span className="text-lg font-bold text-contrast-high">{signal.coin}</span>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"}`}>
                       {signal.direction.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex flex-col items-end space-y-1">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        signal.status
-                      )}`}
-                    >
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(signal.status)}`}>
                       {signal.status.toUpperCase()}
                     </span>
-                    <motion.span
-                      className={`text-xs font-sans ${result.color}`}
-                      aria-label={`Result: ${result.text}`}
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
+                    <motion.span className={`text-xs font-sans ${result.color}`} aria-label={`Result: ${result.text}`} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                       {result.text}
                     </motion.span>
                   </div>
@@ -402,119 +442,51 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                   {/* Entry + Leverage */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="lego-card border-light p-3 shadow-sm">
-                      <div className="text-xs text-contrast-medium uppercase mb-1">
-                        Entry Price
-                      </div>
-                      <div className="text-sm font-bold text-contrast-high">
-                        ${signal.entry_price?.toLocaleString()}
-                      </div>
+                      <div className="text-xs text-contrast-medium uppercase mb-1">Entry Price</div>
+                      <div className="text-sm font-bold text-contrast-high">${signal.entry_price?.toLocaleString()}</div>
                     </div>
                     <div className="lego-card border-light p-3 shadow-sm">
-                      <div className="text-xs text-contrast-medium uppercase mb-1">
-                        Leverage
-                      </div>
-                      <div className="text-sm font-bold text-[var(--color-primary)]">
-                        {signal.leverage}x
-                      </div>
+                      <div className="text-xs text-contrast-medium uppercase mb-1">Leverage</div>
+                      <div className="text-sm font-bold text-[var(--color-primary)]">{signal.leverage}x</div>
                     </div>
                   </div>
 
                   {/* Stop Loss */}
                   <div className="lego-card border-dark p-3 bg-[var(--color-secondary)]/10">
                     <div className="flex justify-between items-center mb-2">
-                      <div className="text-xs text-[var(--color-secondary)] uppercase">
-                        Stop Loss
-                      </div>
-                      {stopLossROI && (
-                        <span className="text-xs text-[var(--color-secondary)] font-medium">
-                          {stopLossROI}% ROI
-                        </span>
-                      )}
+                      <div className="text-xs text-[var(--color-secondary)] uppercase">Stop Loss</div>
+                      {stopLossROI && <span className="text-xs text-[var(--color-secondary)] font-medium">{stopLossROI}% ROI</span>}
                     </div>
                     <div className="text-sm font-bold text-[var(--color-secondary)]">
-                      {canViewTargets() ? (
-                        signal.stop_loss
-                          ? `$${signal.stop_loss.toLocaleString()}`
-                          : "N/A"
-                      ) : (
-                        <span className="flex items-center text-contrast-medium text-xs">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Premium
-                        </span>
-                      )}
+                      {canViewTargets() ? (signal.stop_loss ? `$${signal.stop_loss.toLocaleString()}` : "N/A") : (<span className="flex items-center text-contrast-medium text-xs"><Lock className="w-3 h-3 mr-1" />Premium</span>)}
                     </div>
                   </div>
 
                   {/* Profit Targets */}
                   <div className="lego-card border-dark p-3 bg-[var(--color-accent1)]/10">
                     <div className="flex justify-between items-center mb-3">
-                      <div className="text-xs text-[var(--color-accent1)] uppercase flex items-center">
-                        <Target className="w-3 h-3 mr-1" />
-                        Profit Targets
-                      </div>
-                      {!canViewTargets() && (
-                        <span className="flex items-center text-xs text-contrast-medium">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Premium
-                        </span>
-                      )}
+                      <div className="text-xs text-[var(--color-accent1)] uppercase flex items-center"><Target className="w-3 h-3 mr-1" />Profit Targets</div>
+                      {!canViewTargets() && (<span className="flex items-center text-xs text-contrast-medium"><Lock className="w-3 h-3 mr-1" />Premium</span>)}
                     </div>
 
                     {canViewTargets() ? (
                       <div className="space-y-2">
                         {(() => {
-                          const targets = parseTargets(signal.targets);
+                          const targets = parseTargets(signal.targets, signal.direction);
                           if (targets.length === 0) {
-                            return (
-                              <div className="text-xs text-contrast-medium italic">
-                                No targets set
-                              </div>
-                            );
+                            return (<div className="text-xs text-contrast-medium italic">No targets set</div>);
                           }
-
-                          return targets.slice(0, 3).map(({ price, status }, i) => {
-                            const targetROI = calculateROI(
-                              price,
-                              signal.entry_price,
-                              signal.leverage,
-                              signal.direction
-                            );
-
+                          return targets.slice(0, 3).map(({ label, price, status }, i) => {
+                            const targetROI = calculateROI(price, signal.entry_price, signal.leverage, signal.direction);
                             return (
-                              <div
-                                key={`${price}-${i}`}
-                                className="flex justify-between items-center p-2 lego-card border-light text-xs"
-                              >
+                              <div key={`${price}-${i}`} className="flex justify-between items-center p-2 lego-card border-light text-xs">
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-contrast-medium">
-                                    T{i + 1}
-                                  </span>
-                                  <span className="font-semibold text-contrast-high">
-                                    ${parseFloat(price || 0).toLocaleString()}
-                                  </span>
+                                  <span className="text-contrast-medium">{label}</span>
+                                  <span className="font-semibold text-contrast-high">${parseFloat(price || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  {targetROI && (
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded text-xs ${
-                                        parseFloat(targetROI) > 0
-                                          ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
-                                          : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
-                                      }`}
-                                    >
-                                      {parseFloat(targetROI) > 0 ? "+" : ""}
-                                      {targetROI}%
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded text-xs ${
-                                      status === "hit"
-                                        ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
-                                        : status === "fail"
-                                        ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
-                                        : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
-                                    }`}
-                                  >
+                                  {targetROI && (<span className={`px-1.5 py-0.5 rounded text-xs ${parseFloat(targetROI) > 0 ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"}`}>{parseFloat(targetROI) > 0 ? "+" : ""}{targetROI}%</span>)}
+                                  <span className={`px-1.5 py-0.5 rounded text-xs ${status === "hit" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]" : status === "fail" ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]" : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"}`}>
                                     {status === "hit" && "✓"}
                                     {status === "fail" && "✗"}
                                     {status === "pending" && "○"}
@@ -528,14 +500,9 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                     ) : (
                       <div className="space-y-2">
                         {[1, 2, 3].map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-6 lego-card bg-gradient-to-r from-[var(--color-card-bg)] via-[var(--color-card-hover)] to-[var(--color-card-bg)] relative overflow-hidden"
-                          >
+                          <div key={i} className="h-6 lego-card bg-gradient-to-r from-[var(--color-card-bg)] via-[var(--color-card-hover)] to-[var(--color-card-bg)] relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
-                            <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-contrast-medium">
-                              T{i + 1}
-                            </div>
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-contrast-medium">T{i + 1}</div>
                           </div>
                         ))}
                       </div>
@@ -554,22 +521,21 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
 
                   {isAdmin() && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* DOWNLOAD */}
                       <motion.button
-                        onClick={() => handleEdit(signal, "signal")}
+                        onClick={() => handleDownload(signal.id, `signal-${signal.coin}-${signal.id}.png`)}
                         className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                        title="Edit Signal"
+                        title="Download Signal Card as image"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
+                        <Download className="h-3 w-3" />
+                      </motion.button>
+
+                      <motion.button onClick={() => handleEdit(signal, "signal")} className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded" title="Edit Signal" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                         <Edit3 className="h-3 w-3" />
                       </motion.button>
-                      <motion.button
-                        onClick={() => handleDelete(signal.id, "signal")}
-                        className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
-                        title="Delete Signal"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
+                      <motion.button onClick={() => handleDelete(signal.id, "signal")} className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded" title="Delete Signal" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                         <Trash2 className="h-3 w-3" />
                       </motion.button>
                     </div>
@@ -587,19 +553,10 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
           <div className="w-16 h-16 mx-auto mb-4 lego-card rounded-full flex items-center justify-center">
             <TrendingUp className="w-8 h-8 text-contrast-medium" />
           </div>
-          <h3 className="text-lg font-semibold text-contrast-high mb-2 font-heading">
-            No signals yet
-          </h3>
-          <p className="text-contrast-medium text-xs sm:text-sm mb-4">
-            Trading signals will appear here once created.
-          </p>
+          <h3 className="text-lg font-semibold text-contrast-high mb-2 font-heading">No signals yet</h3>
+          <p className="text-contrast-medium text-xs sm:text-sm mb-4">Trading signals will appear here once created.</p>
           {isAdmin() && (
-            <motion.button
-              onClick={() => handleCreate("signal")}
-              className="lego-button flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium mx-auto text-xs sm:text-sm"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.button onClick={() => handleCreate("signal")} className="lego-button flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium mx-auto text-xs sm:text-sm" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               <span>Create First Signal</span>
             </motion.button>

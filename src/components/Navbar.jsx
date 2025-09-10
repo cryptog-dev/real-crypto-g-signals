@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { LogOut, User, Settings, Bell, Sun, Moon, Menu, X } from "lucide-react";
@@ -43,9 +44,14 @@ const DropdownMenu = ({ trigger, children, align = "right" }) => {
 const Navbar = () => {
   const { logout, user } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
 
   const menuVariants = {
     closed: { x: "100%", opacity: 0 },
@@ -62,7 +68,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
             <img
               className="h-9 sm:h-12 w-auto transition-transform hover:scale-105"
               src={Logo}
@@ -85,38 +91,6 @@ const Navbar = () => {
               )}
             </button>
 
-            {/* Notifications Dropdown
-            // <DropdownMenu
-            //   trigger={
-            //     <div className="lego-button p-2.5 bg-[var(--color-accent1)]/90 hover:bg-[var(--color-accent1)] text-white rounded-lg">
-            //       <Bell className="h-5 w-5" />
-            //     </div>
-            //   }
-            // >
-            //   <h4 className="text-sm font-semibold mb-2">Notifications</h4>
-            //   <p className="text-contrast-medium text-sm">No new notifications</p>
-            //   <button className="w-full mt-2 text-sm text-[var(--color-primary)] hover:underline">
-            //     View All
-            //   </button>
-            // </DropdownMenu> */}
-
-            {/* Settings Dropdown */}
-            {/* <DropdownMenu
-              trigger={
-                <div className="lego-button p-2.5 bg-[var(--color-accent2)]/90 hover:bg-[var(--color-accent2)] text-white rounded-lg">
-                  <Settings className="h-5 w-5" />
-                </div>
-              }
-            >
-              <h4 className="text-sm font-semibold mb-2">Settings</h4>
-              <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-accent2)]/10">
-                Account Settings
-              </button>
-              <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-accent2)]/10">
-                Preferences
-              </button>
-            </DropdownMenu> */}
-
             {/* Profile Dropdown (LinkedIn style) */}
             <DropdownMenu
               trigger={
@@ -137,16 +111,16 @@ const Navbar = () => {
                 </div>
               </div>
               <hr className="my-2 border-[var(--color-border-light)]" />
-              {/* <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10">
+              {/* <button 
+                onClick={handleProfileClick}
+                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10"
+              >
                 View Profile
               </button>
               <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10">
-                My Signals
-              </button>
-              <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10">
                 Settings
-              </button> */}
-              {/* <hr className="my-2 border-[var(--color-border-light)]" /> */}
+              </button> 
+              <hr className="my-2 border-[var(--color-border-light)]" /> */}
               <button
                 onClick={logout}
                 className="w-full text-left px-2 py-1 text-sm text-[var(--color-secondary)] rounded hover:bg-[var(--color-secondary)]/10"
@@ -202,15 +176,21 @@ const Navbar = () => {
 
               {/* Profile Section */}
               <div className="pt-2 border-t border-[var(--color-border-light)]">
-                <div className="flex items-center space-x-3 px-3 py-2">
+                <button
+                  onClick={() => {
+                    handleProfileClick();
+                    toggleMenu();
+                  }}
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-[var(--color-primary)]/10 transition-colors"
+                >
                   <div className="h-10 w-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
                     <User className="h-5 w-5 text-[var(--color-primary)]" />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="font-medium">{user?.username || 'Trader'}</p>
                     <p className="text-sm text-[var(--color-text-secondary)]">View Profile</p>
                   </div>
-                </div>
+                </button>
 
                 {/* Logout Button */}
                 <button
