@@ -520,8 +520,8 @@ const SignalsList = ({ signals, isAdmin, isFree, handleCreate, handleEdit, handl
                   </div>
 
                   {isAdmin() && (
-                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* DOWNLOAD */}
+                    <div className="flex space-x-1 md:space-x-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* DOWNLOAD */}
                       <motion.button
                         onClick={() => handleDownload(signal.id, `signal-${signal.coin}-${signal.id}.png`)}
                         className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
