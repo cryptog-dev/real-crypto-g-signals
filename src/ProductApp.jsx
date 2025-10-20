@@ -67,7 +67,7 @@ const ProductApp = () => {
         blogsAPI.getAll(),
         signalsAPI.getAll(),
       ]);
-      console.log('Raw signals data:', signalsResponse.data);
+      // console.log('Raw signals data:', signalsResponse.data);
       setBlogs(blogsResponse.data);
       setSignals(signalsResponse.data);
     } catch (error) {

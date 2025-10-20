@@ -36,8 +36,7 @@ const RecentSignals = ({ signals, getStatusColor, formatDate }) => (
 
             {/* Coin and Price */}
             <div>
-              <p className="font-medium text-contrast-high text-sm font-sans">
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
 <img
       src={`/assets/${signal.coin.toLowerCase()}.svg`}
       alt={`${signal.coin} icon`}
@@ -46,7 +45,9 @@ const RecentSignals = ({ signals, getStatusColor, formatDate }) => (
         e.currentTarget.src = "/assets/default.png";
       }}
     />
-  </div>{signal.coin}</p>
+  </div>
+              <p className="font-medium text-contrast-high text-sm font-sans">
+              {signal.coin}</p>
               <p className="text-xs text-contrast-medium mt-1 font-sans">
                 Entry: <span className="text-[var(--color-primary)] font-medium">${signal.entry_price?.toLocaleString() || "N/A"}</span>
               </p>
