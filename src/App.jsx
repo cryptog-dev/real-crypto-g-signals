@@ -4,10 +4,21 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProductApp from "./ProductApp";
-import { Eye, EyeOff, User, Lock, Mail, ArrowLeft, AlertCircle, Check, Loader2, Sun, Moon } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  User,
+  Lock,
+  Mail,
+  ArrowLeft,
+  AlertCircle,
+  Check,
+  Loader2,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo2 from "./assets/logo2.png";
-
 
 const AppContent = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -146,7 +157,9 @@ const AppContent = () => {
           <button
             onClick={toggleTheme}
             className="lego-button p-2 bg-[var(--color-neutral-dark)]/50 hover:bg-[var(--color-primary)]/20 border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] rounded-lg text-contrast-high transition-all duration-200"
-            aria-label={`Switch to ${themeName === "Market Day" ? "Market Night" : "Market Day"} theme`}
+            aria-label={`Switch to ${
+              themeName === "Market Day" ? "Market Night" : "Market Day"
+            } theme`}
           >
             {themeName === "Market Day" ? (
               <Moon className="h-5 w-5" />
@@ -173,7 +186,7 @@ const AppContent = () => {
           className="lego-button p-2 bg-[var(--color-neutral-dark)]/50 hover:bg-[var(--color-primary)]/20 border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] rounded-lg text-contrast-high transition-all duration-200"
           aria-label={`Switch to ${themeName === "Market Day" ? "Market Night" : "Market Day"} theme`}
         > */}
-          {/* {themeName === "Market Day" ? (
+        {/* {themeName === "Market Day" ? (
             <Moon className="h-5 w-5" />
           ) : (
             <Sun className="h-5 w-5" />
@@ -204,11 +217,11 @@ const AppContent = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
-              <img
-    src={Logo2}
-    alt="CryptoG Signals"
-    className="mx-auto mb-4 h-26 w-auto object-contain"
-  />
+                <img
+                  src={Logo2}
+                  alt="CryptoG Signals"
+                  className="mx-auto mb-4 h-26 w-auto object-contain"
+                />
                 <p className="text-contrast-medium text-sm font-sans">
                   {isLogin
                     ? `Sign in to access ${themeName} trading tools`
@@ -252,7 +265,9 @@ const AppContent = () => {
                 <label
                   htmlFor="username"
                   className={`block text-sm font-medium mb-1.5 ${
-                    formErrors.username ? "text-[var(--color-negative)]" : "text-contrast-high"
+                    formErrors.username
+                      ? "text-[var(--color-negative)]"
+                      : "text-contrast-high"
                   } font-sans`}
                 >
                   Username {formErrors.username && `- ${formErrors.username}`}
@@ -260,7 +275,9 @@ const AppContent = () => {
                 <div className="relative">
                   <User
                     className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                      formErrors.username ? "text-[var(--color-negative)]" : "text-contrast-medium"
+                      formErrors.username
+                        ? "text-[var(--color-negative)]"
+                        : "text-contrast-medium"
                     }`}
                     size={18}
                   />
@@ -279,7 +296,9 @@ const AppContent = () => {
                     disabled={loading}
                     placeholder="Enter your username"
                     aria-invalid={!!formErrors.username}
-                    aria-describedby={formErrors.username ? "username-error" : undefined}
+                    aria-describedby={
+                      formErrors.username ? "username-error" : undefined
+                    }
                   />
                 </div>
               </motion.div>
@@ -294,7 +313,9 @@ const AppContent = () => {
                   <label
                     htmlFor="email"
                     className={`block text-sm font-medium mb-1.5 ${
-                      formErrors.email ? "text-[var(--color-negative)]" : "text-contrast-high"
+                      formErrors.email
+                        ? "text-[var(--color-negative)]"
+                        : "text-contrast-high"
                     } font-sans`}
                   >
                     Email {formErrors.email && `- ${formErrors.email}`}
@@ -302,7 +323,9 @@ const AppContent = () => {
                   <div className="relative">
                     <Mail
                       className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                        formErrors.email ? "text-[var(--color-negative)]" : "text-contrast-medium"
+                        formErrors.email
+                          ? "text-[var(--color-negative)]"
+                          : "text-contrast-medium"
                       }`}
                       size={18}
                     />
@@ -321,7 +344,9 @@ const AppContent = () => {
                       disabled={loading}
                       placeholder="Enter your email"
                       aria-invalid={!!formErrors.email}
-                      aria-describedby={formErrors.email ? "email-error" : undefined}
+                      aria-describedby={
+                        formErrors.email ? "email-error" : undefined
+                      }
                     />
                   </div>
                 </motion.div>
@@ -336,7 +361,9 @@ const AppContent = () => {
                 <label
                   htmlFor="password"
                   className={`block text-sm font-medium mb-1.5 ${
-                    formErrors.password ? "text-[var(--color-negative)]" : "text-contrast-high"
+                    formErrors.password
+                      ? "text-[var(--color-negative)]"
+                      : "text-contrast-high"
                   } font-sans`}
                 >
                   Password {formErrors.password && `- ${formErrors.password}`}
@@ -344,7 +371,9 @@ const AppContent = () => {
                 <div className="relative">
                   <Lock
                     className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                      formErrors.password ? "text-[var(--color-negative)]" : "text-contrast-medium"
+                      formErrors.password
+                        ? "text-[var(--color-negative)]"
+                        : "text-contrast-medium"
                     }`}
                     size={18}
                   />
@@ -361,17 +390,23 @@ const AppContent = () => {
                     } rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-[var(--color-card-bg)] text-contrast-high transition-all duration-200`}
                     required
                     disabled={loading}
-                    placeholder={isLogin ? "Enter your password" : "Create a password"}
+                    placeholder={
+                      isLogin ? "Enter your password" : "Create a password"
+                    }
                     minLength={isLogin ? undefined : 8}
                     aria-invalid={!!formErrors.password}
-                    aria-describedby={formErrors.password ? "password-error" : undefined}
+                    aria-describedby={
+                      formErrors.password ? "password-error" : undefined
+                    }
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-contrast-medium hover:text-[var(--color-primary)] transition-colors duration-200"
                     tabIndex="-1"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -383,7 +418,11 @@ const AppContent = () => {
                         Password strength:
                       </span>
                       <span className="text-xs font-medium text-contrast-high">
-                        {passwordStrength <= 1 ? "Weak" : passwordStrength <= 3 ? "Medium" : "Strong"}
+                        {passwordStrength <= 1
+                          ? "Weak"
+                          : passwordStrength <= 3
+                          ? "Medium"
+                          : "Strong"}
                       </span>
                     </div>
                     <div className="w-full bg-[var(--color-border-light)] rounded-full h-1.5">
@@ -415,15 +454,21 @@ const AppContent = () => {
                   <label
                     htmlFor="confirmPassword"
                     className={`block text-sm font-medium mb-1.5 ${
-                      formErrors.confirmPassword ? "text-[var(--color-negative)]" : "text-contrast-high"
+                      formErrors.confirmPassword
+                        ? "text-[var(--color-negative)]"
+                        : "text-contrast-high"
                     } font-sans`}
                   >
-                    Confirm Password {formErrors.confirmPassword && `- ${formErrors.confirmPassword}`}
+                    Confirm Password{" "}
+                    {formErrors.confirmPassword &&
+                      `- ${formErrors.confirmPassword}`}
                   </label>
                   <div className="relative">
                     <Lock
                       className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                        formErrors.confirmPassword ? "text-[var(--color-negative)]" : "text-contrast-medium"
+                        formErrors.confirmPassword
+                          ? "text-[var(--color-negative)]"
+                          : "text-contrast-medium"
                       }`}
                       size={18}
                     />
@@ -442,16 +487,28 @@ const AppContent = () => {
                       disabled={loading}
                       placeholder="Confirm your password"
                       aria-invalid={!!formErrors.confirmPassword}
-                      aria-describedby={formErrors.confirmPassword ? "confirm-password-error" : undefined}
+                      aria-describedby={
+                        formErrors.confirmPassword
+                          ? "confirm-password-error"
+                          : undefined
+                      }
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-contrast-medium hover:text-[var(--color-primary)] transition-colors duration-200"
                       tabIndex="-1"
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
                     >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showConfirmPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
                     </button>
                   </div>
                   {formData.password && formData.confirmPassword && (
@@ -491,7 +548,9 @@ const AppContent = () => {
                   {loading ? (
                     <>
                       <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
-                      <span>{isLogin ? "Signing in..." : "Creating account..."}</span>
+                      <span>
+                        {isLogin ? "Signing in..." : "Creating account..."}
+                      </span>
                     </>
                   ) : isLogin ? (
                     "Sign In"
@@ -509,7 +568,9 @@ const AppContent = () => {
                 transition={{ delay: 0.4 }}
               >
                 <p className="text-sm text-contrast-medium font-sans">
-                  {isLogin ? "New to CryptoG Signals?" : "Already have an account?"}
+                  {isLogin
+                    ? "New to CryptoG Signals?"
+                    : "Already have an account?"}
                 </p>
                 <button
                   type="button"
@@ -517,7 +578,12 @@ const AppContent = () => {
                     setIsLogin(!isLogin);
                     setError("");
                     setFormErrors({});
-                    setFormData({ username: "", email: "", password: "", confirmPassword: "" });
+                    setFormData({
+                      username: "",
+                      email: "",
+                      password: "",
+                      confirmPassword: "",
+                    });
                   }}
                   className="mt-2 text-sm font-medium text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 flex items-center justify-center mx-auto transition-colors duration-200 font-sans"
                 >
@@ -550,4 +616,4 @@ const App = () => (
   </ThemeProvider>
 );
 
-export default App; 
+export default App;
