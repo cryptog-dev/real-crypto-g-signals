@@ -356,7 +356,9 @@ const AuthForm = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-contrast-medium hover:text-[var(--color-primary)] transition-colors duration-200"
                     tabIndex="-1"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -445,7 +447,9 @@ const AuthForm = () => {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-contrast-medium hover:text-[var(--color-primary)] transition-colors duration-200"
                       tabIndex="-1"
                       aria-label={
@@ -516,7 +520,9 @@ const AuthForm = () => {
                 transition={{ delay: 0.4 }}
               >
                 <p className="text-sm text-contrast-medium font-sans">
-                  {isLogin ? "New to CryptoG Signals?" : "Already have an account?"}
+                  {isLogin
+                    ? "New to CryptoG Signals?"
+                    : "Already have an account?"}
                 </p>
                 <button
                   type="button"
