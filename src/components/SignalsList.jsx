@@ -36,10 +36,26 @@ const SignalsList = ({
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid"); // "grid" or "list"
+  const [collapsed, setCollapsed] = useState(() => ({
+    premium: (typeof isFree === "function" && isFree()) ? true : false,
+    free: false,
+  }));
+  const [compact, setCompact] = useState({ premium: false, free: false });
   const dropdownRef = useRef(null);
 
   // NEW: refs map for cards
   const cardRefs = useRef({});
+
+  useEffect(() => {
+    if (typeof isFree === "function") {
+      const premiumShouldBeCollapsed = isFree();
+      setCollapsed((prev) =>
+        prev.premium === premiumShouldBeCollapsed
+          ? prev
+          : { ...prev, premium: premiumShouldBeCollapsed }
+      );
+    }
+  }, [isFree]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,6 +88,8 @@ const SignalsList = ({
   });
 
   const uniqueCoins = [...new Set(signals.map((signal) => signal.coin))].sort();
+
+  const getAccessType = (s) => (s.access_type || "free").toLowerCase();
 
   const handleFilterChange = (type, value) => {
     setFilters((prev) => {
@@ -481,553 +499,606 @@ const SignalsList = ({
         </div>
       )}
 
-      {/* Signals Container */}
-      <div
-        className={
-          viewMode === "grid"
-            ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"
-            : "space-y-3"
-        }
-      >
-        {filteredSignals.map((signal) => {
-          const stopLossROI = calculateStopLossROI(
-            signal.stop_loss,
-            signal.entry_price,
-            signal.leverage,
-            signal.direction
-          );
-          const result = getResultText(signal);
+      {/* Grouped sections by access_type: Premium then Free */}
+      {(["premium", "free"]).map((type) => {
+        const items = filteredSignals.filter((s) => getAccessType(s) === type);
+        if (items.length === 0) return null;
+        return (
+          <div key={type} className="space-y-3">
+            <div className="flex items-center justify-between mt-6">
+              <h3 className="text-lg font-semibold text-contrast-high font-heading">
+                {type === "premium" ? "Premium" : "Free"}
+                <span className="ml-2 text-contrast-medium text-sm">({items.length})</span>
+              </h3>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  onClick={() => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }))}
+                  className="lego-button px-3 py-1.5 border border-light bg-[var(--color-card-bg)] rounded-md text-xs"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {collapsed[type] ? "Expand" : "Collapse"}
+                </motion.button>
+                <motion.button
+                  onClick={() => setCompact((prev) => ({ ...prev, [type]: !prev[type] }))}
+                  className="lego-button px-3 py-1.5 border border-light bg-[var(--color-card-bg)] rounded-md text-xs"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {compact[type] ? "Normal" : "Compact"}
+                </motion.button>
+              </div>
+            </div>
 
-          if (viewMode === "list") {
-            return (
-              <div
-                key={signal.id}
-                id={`signal-card-${signal.id}`}
-                ref={(el) => (cardRefs.current[signal.id] = el)}
-                className="lego-card group"
-              >
-                <div className="p-4">
-                  {/* Desktop layout */}
-                  <div className="hidden md:flex items-center justify-between">
-                    {/* Left side - Coin info */}
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
-                        <img
-                          src={`/assets/${signal.coin.toLowerCase()}.svg`}
-                          alt={`${signal.coin} icon`}
-                          className="w-6 h-6 object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = "/assets/default.png";
-                          }}
-                          crossOrigin="anonymous"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg font-bold text-contrast-high">
-                            {signal.coin}
-                          </span>
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              signal.direction === "buy"
-                                ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
-                                : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
-                            }`}
-                          >
+            {!collapsed[type] && (
+              <div className={compact[type] ? "space-y-2" : (viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5" : "space-y-3") }>
+                {items.map((signal) => {
+                  const stopLossROI = calculateStopLossROI(
+                    signal.stop_loss,
+                    signal.entry_price,
+                    signal.leverage,
+                    signal.direction
+                  );
+                  const result = getResultText(signal);
+
+                  if (compact[type]) {
+                    return (
+                      <div key={signal.id} className="lego-card p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+                            <img
+                              src={`/assets/${signal.coin.toLowerCase()}.svg`}
+                              alt={`${signal.coin} icon`}
+                              className="w-4 h-4 object-contain"
+                              onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                          <span className="text-sm font-semibold text-contrast-high">{signal.coin}</span>
+                          <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"}`}>
                             {signal.direction.toUpperCase()}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-4 text-xs text-contrast-medium mt-1">
-                          <span>
-                            Entry: ${signal.entry_price?.toLocaleString()}
-                          </span>
-                          <span>Leverage: {signal.leverage}x</span>
-                          <div className="flex items-center">
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusColor(signal.status)}`}>{signal.status.toUpperCase()}</span>
+                          <span className="text-xs text-contrast-medium">{formatDate(signal.created_at)}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (viewMode === "list") {
+                    return (
+                      <div
+                        key={signal.id}
+                        id={`signal-card-${signal.id}`}
+                        ref={(el) => (cardRefs.current[signal.id] = el)}
+                        className="lego-card group"
+                      >
+                        <div className="p-4">
+                          {/* Desktop layout */}
+                          <div className="hidden md:flex items-center justify-between">
+                            {/* Left side - Coin info */}
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+                                <img
+                                  src={`/assets/${signal.coin.toLowerCase()}.svg`}
+                                  alt={`${signal.coin} icon`}
+                                  className="w-6 h-6 object-contain"
+                                  onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                  crossOrigin="anonymous"
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-lg font-bold text-contrast-high">{signal.coin}</span>
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"}`}>
+                                    {signal.direction.toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-4 text-xs text-contrast-medium mt-1">
+                                  <span>Entry: ${signal.entry_price?.toLocaleString()}</span>
+                                  <span>Leverage: {signal.leverage}x</span>
+                                  <div className="flex items-center"><Clock className="w-3 h-3 mr-1" /><span>{formatDate(signal.created_at)}</span></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Center - Status and Result */}
+                            <div className="flex flex-col items-center space-y-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(signal.status)}`}>{signal.status.toUpperCase()}</span>
+                              <span className={`text-xs font-sans ${result.color}`}>{result.text}</span>
+                            </div>
+
+                            {/* Right side - Targets and Actions */}
+                            <div className="flex items-center space-x-4">
+                              {/* Targets preview */}
+                              <div className="text-right">
+                                {canViewTargets() ? (
+                                  <div className="text-xs text-contrast-medium">
+                                    {(() => {
+                                      const targets = parseTargets(
+                                        signal.targets,
+                                        signal.direction
+                                      );
+                                      const hitCount = targets.filter(
+                                        (t) => t.status === "hit"
+                                      ).length;
+                                      return `${hitCount}/${targets.length} targets hit`;
+                                    })()}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center text-xs text-contrast-medium">
+                                    <Lock className="w-3 h-3 mr-1" />
+                                    <span>Premium</span>
+                                  </div>
+                                )}
+                                {stopLossROI && (
+                                  <div className="text-xs text-[var(--color-secondary)]">
+                                    SL: {stopLossROI}% ROI
+                                  </div>
+                                )}
+                                {canViewTargets() && (
+                                  <div className="mt-1 space-y-1">
+                                    {(() => {
+                                      const targets = parseTargets(
+                                        signal.targets,
+                                        signal.direction
+                                      ).slice(0, 3);
+                                      return targets.map(({ label, price, status }, i) => (
+                                        <div key={`${price}-${i}`} className="flex items-center justify-between text-[11px]">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-contrast-medium">{label}</span>
+                                            <span className="font-medium text-contrast-high">${parseFloat(price || 0).toLocaleString()}</span>
+                                          </div>
+                                          <span
+                                            className={`px-1 py-0.5 rounded ${
+                                              status === "hit"
+                                                ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
+                                                : status === "fail"
+                                                ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
+                                                : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
+                                            }`}
+                                          >
+                                            {status}
+                                          </span>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Admin actions */}
+                              {isAdmin() && (
+                                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <motion.button
+                                    onClick={() => handleDownload(signal.id)}
+                                    className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                    title="Download Signal Card"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </motion.button>
+                                  <motion.button
+                                    onClick={() => handleEdit(signal, "signal")}
+                                    className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                    title="Edit Signal"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <Edit3 className="h-3 w-3" />
+                                  </motion.button>
+                                  <motion.button
+                                    onClick={() => handleDelete(signal.id, "signal")}
+                                    className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
+                                    title="Delete Signal"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </motion.button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Mobile layout */}
+                          <div className="md:hidden space-y-3">
+                            {/* Header row */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+                                  <img
+                                    src={`/assets/${signal.coin.toLowerCase()}.svg`}
+                                    alt={`${signal.coin} icon`}
+                                    className="w-5 h-5 object-contain"
+                                    onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                    crossOrigin="anonymous"
+                                  />
+                                </div>
+                                <span className="text-base font-bold text-contrast-high">{signal.coin}</span>
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    signal.direction === "buy"
+                                      ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
+                                      : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
+                                  }`}
+                                >
+                                  {signal.direction.toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                    signal.status
+                                  )}`}
+                                >
+                                  {signal.status.toUpperCase()}
+                                </span>
+                                {isAdmin() && (
+                                  <div className="flex space-x-1">
+                                    <motion.button
+                                      onClick={() => handleDownload(signal.id)}
+                                      className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                      title="Download Signal Card"
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                    >
+                                      <Download className="h-3 w-3" />
+                                    </motion.button>
+                                    <motion.button
+                                      onClick={() => handleEdit(signal, "signal")}
+                                      className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                      title="Edit Signal"
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                    >
+                                      <Edit3 className="h-3 w-3" />
+                                    </motion.button>
+                                    <motion.button
+                                      onClick={() => handleDelete(signal.id, "signal")}
+                                      className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
+                                      title="Delete Signal"
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </motion.button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Details row */}
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-contrast-medium">Entry:</span>
+                                <span className="ml-1 font-semibold text-contrast-high">
+                                  ${signal.entry_price?.toLocaleString()}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-contrast-medium">Leverage:</span>
+                                <span className="ml-1 font-semibold text-[var(--color-primary)]">
+                                  {signal.leverage}x
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-contrast-medium">Result:</span>
+                                <span className={`ml-1 font-semibold ${result.color}`}>
+                                  {result.text}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-contrast-medium">Date:</span>
+                                <span className="ml-1 font-semibold text-contrast-high">
+                                  {formatDate(signal.created_at)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Targets row */}
+                            <div className="text-xs">
+                              {canViewTargets() ? (
+                                <div className="text-contrast-medium">
+                                  {(() => {
+                                    const targets = parseTargets(
+                                      signal.targets,
+                                      signal.direction
+                                    );
+                                    const hitCount = targets.filter(
+                                      (t) => t.status === "hit"
+                                    ).length;
+                                    return `${hitCount}/${targets.length} targets hit`;
+                                  })()}
+                                  {stopLossROI && (
+                                    <span className="ml-2 text-[var(--color-secondary)]">
+                                      • SL: {stopLossROI}% ROI
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-contrast-medium">
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  <span>Premium</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Grid view
+                  return (
+                    <div
+                      key={signal.id}
+                      id={`signal-card-${signal.id}`}
+                      ref={(el) => (cardRefs.current[signal.id] = el)}
+                      className="lego-card group"
+                    >
+                      <div className="p-5">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                signal.direction === "buy"
+                                  ? "bg-[var(--color-accent1)]"
+                                  : "bg-[var(--color-secondary)]"
+                              }`}
+                            />
+                            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
+                              <img
+                                src={`/assets/${signal.coin.toLowerCase()}.svg`}
+                                alt={`${signal.coin} icon`}
+                                className="w-5 h-5 object-contain"
+                                onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                            <span className="text-lg font-bold text-contrast-high">{signal.coin}</span>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                signal.direction === "buy"
+                                  ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
+                                  : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
+                              }`}
+                            >
+                              {signal.direction.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                signal.status
+                              )}`}
+                            >
+                              {signal.status.toUpperCase()}
+                            </span>
+                            <motion.span
+                              className={`text-xs font-sans ${result.color}`}
+                              aria-label={`Result: ${result.text}`}
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {result.text}
+                            </motion.span>
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="space-y-4">
+                          {/* Entry + Leverage */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="lego-card border-light p-3 shadow-sm">
+                              <div className="text-xs text-contrast-medium uppercase mb-1">
+                                Entry Price
+                              </div>
+                              <div className="text-sm font-bold text-contrast-high">
+                                ${signal.entry_price?.toLocaleString()}
+                              </div>
+                            </div>
+                            <div className="lego-card border-light p-3 shadow-sm">
+                              <div className="text-xs text-contrast-medium uppercase mb-1">
+                                Leverage
+                              </div>
+                              <div className="text-sm font-bold text-[var(--color-primary)]">
+                                {signal.leverage}x
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Stop Loss */}
+                          <div className="lego-card border-dark p-3 bg-[var(--color-secondary)]/10">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="text-xs text-[var(--color-secondary)] uppercase">
+                                Stop Loss
+                              </div>
+                              {stopLossROI && (
+                                <span className="text-xs text-[var(--color-secondary)] font-medium">
+                                  {stopLossROI}% ROI
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm font-bold text-[var(--color-secondary)]">
+                              {canViewTargets() ? (
+                                signal.stop_loss ? (
+                                  `$${signal.stop_loss.toLocaleString()}`
+                                ) : (
+                                  "N/A"
+                                )
+                              ) : (
+                                <span className="flex items-center text-contrast-medium text-xs">
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Premium
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Profit Targets */}
+                          <div className="lego-card border-dark p-3 bg-[var(--color-accent1)]/10">
+                            <div className="flex justify-between items-center mb-3">
+                              <div className="text-xs text-[var(--color-accent1)] uppercase flex items-center">
+                                <Target className="w-3 h-3 mr-1" />
+                                Profit Targets
+                              </div>
+                              {!canViewTargets() && (
+                                <span className="flex items-center text-xs text-contrast-medium">
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Premium
+                                </span>
+                              )}
+                            </div>
+
+                            {canViewTargets() ? (
+                              <div className="space-y-2">
+                                {(() => {
+                                  const targets = parseTargets(
+                                    signal.targets,
+                                    signal.direction
+                                  );
+                                  if (targets.length === 0) {
+                                    return (
+                                      <div className="text-xs text-contrast-medium italic">
+                                        No targets set
+                                      </div>
+                                    );
+                                  }
+                                  return targets
+                                    .slice(0, 3)
+                                    .map(({ label, price, status }, i) => {
+                                      const targetROI = calculateROI(
+                                        price,
+                                        signal.entry_price,
+                                        signal.leverage,
+                                        signal.direction
+                                      );
+                                      return (
+                                        <div
+                                          key={`${price}-${i}`}
+                                          className="flex justify-between items-center p-2 lego-card border-light text-xs"
+                                        >
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-contrast-medium">
+                                              {label}
+                                            </span>
+                                            <span className="font-semibold text-contrast-high">
+                                              ${parseFloat(price || 0).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            {targetROI && (
+                                              <span
+                                                className={`px-1.5 py-0.5 rounded text-xs ${
+                                                  parseFloat(targetROI) > 0
+                                                    ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
+                                                    : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
+                                                }`}
+                                              >
+                                                {parseFloat(targetROI) > 0 ? "+" : ""}
+                                                {targetROI}%
+                                              </span>
+                                            )}
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded text-xs ${
+                                                status === "hit"
+                                                  ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
+                                                  : status === "fail"
+                                                  ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
+                                                  : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
+                                              }`}
+                                            >
+                                              {status === "hit" && "✓"}
+                                              {status === "fail" && "✗"}
+                                              {status === "pending" && "○"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    });
+                                })()}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {[1, 2, 3].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className="h-6 lego-card bg-gradient-to-r from-[var(--color-card-bg)] via-[var(--color-card-hover)] to-[var(--color-card-bg)] relative overflow-hidden"
+                                  >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                                    <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-contrast-medium">
+                                      T{i + 1}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="px-5 py-3 border-t border-light bg-[var(--color-card-bg)]/50 rounded-b-xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-xs text-contrast-medium">
                             <Clock className="w-3 h-3 mr-1" />
                             <span>{formatDate(signal.created_at)}</span>
                           </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Center - Status and Result */}
-                    <div className="flex flex-col items-center space-y-1">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          signal.status
-                        )}`}
-                      >
-                        {signal.status.toUpperCase()}
-                      </span>
-                      <span className={`text-xs font-sans ${result.color}`}>
-                        {result.text}
-                      </span>
-                    </div>
+                          {isAdmin() && (
+                            <div className="flex space-x-1 md:space-x-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* DOWNLOAD */}
+                              <motion.button
+                                onClick={() =>
+                                  handleDownload(
+                                    signal.id,
+                                    `signal-${signal.coin}-${signal.id}.png`
+                                  )
+                                }
+                                className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                title="Download Signal Card as image"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Download className="h-3 w-3" />
+                              </motion.button>
 
-                    {/* Right side - Targets and Actions */}
-                    <div className="flex items-center space-x-4">
-                      {/* Targets preview */}
-                      <div className="text-right">
-                        {canViewTargets() ? (
-                          <div className="text-xs text-contrast-medium">
-                            {(() => {
-                              const targets = parseTargets(
-                                signal.targets,
-                                signal.direction
-                              );
-                              const hitCount = targets.filter(
-                                (t) => t.status === "hit"
-                              ).length;
-                              return `${hitCount}/${targets.length} targets hit`;
-                            })()}
-                          </div>
-                        ) : (
-                          <div className="flex items-center text-xs text-contrast-medium">
-                            <Lock className="w-3 h-3 mr-1" />
-                            <span>Premium</span>
-                          </div>
-                        )}
-                        {stopLossROI && (
-                          <div className="text-xs text-[var(--color-secondary)]">
-                            SL: {stopLossROI}% ROI
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Admin actions */}
-                      {isAdmin() && (
-                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <motion.button
-                            onClick={() => handleDownload(signal.id)}
-                            className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                            title="Download Signal Card"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Download className="h-3 w-3" />
-                          </motion.button>
-                          <motion.button
-                            onClick={() => handleEdit(signal, "signal")}
-                            className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                            title="Edit Signal"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </motion.button>
-                          <motion.button
-                            onClick={() => handleDelete(signal.id, "signal")}
-                            className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
-                            title="Delete Signal"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </motion.button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Mobile layout */}
-                  <div className="md:hidden space-y-3">
-                    {/* Header row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
-                          <img
-                            src={`/assets/${signal.coin.toLowerCase()}.svg`}
-                            alt={`${signal.coin} icon`}
-                            className="w-5 h-5 object-contain"
-                            onError={(e) => {
-                              e.currentTarget.src = "/assets/default.png";
-                            }}
-                            crossOrigin="anonymous"
-                          />
-                        </div>
-                        <span className="text-base font-bold text-contrast-high">
-                          {signal.coin}
-                        </span>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            signal.direction === "buy"
-                              ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
-                              : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
-                          }`}
-                        >
-                          {signal.direction.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            signal.status
-                          )}`}
-                        >
-                          {signal.status.toUpperCase()}
-                        </span>
-                        {isAdmin() && (
-                          <div className="flex space-x-1">
-                            <motion.button
-                              onClick={() => handleDownload(signal.id)}
-                              className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                              title="Download Signal Card"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Download className="h-3 w-3" />
-                            </motion.button>
-                            <motion.button
-                              onClick={() => handleEdit(signal, "signal")}
-                              className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                              title="Edit Signal"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Edit3 className="h-3 w-3" />
-                            </motion.button>
-                            <motion.button
-                              onClick={() => handleDelete(signal.id, "signal")}
-                              className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
-                              title="Delete Signal"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </motion.button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Details row */}
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <span className="text-contrast-medium">Entry:</span>
-                        <span className="ml-1 font-semibold text-contrast-high">
-                          ${signal.entry_price?.toLocaleString()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-contrast-medium">Leverage:</span>
-                        <span className="ml-1 font-semibold text-[var(--color-primary)]">
-                          {signal.leverage}x
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-contrast-medium">Result:</span>
-                        <span className={`ml-1 font-semibold ${result.color}`}>
-                          {result.text}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-contrast-medium">Date:</span>
-                        <span className="ml-1 font-semibold text-contrast-high">
-                          {formatDate(signal.created_at)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Targets row */}
-                    <div className="text-xs">
-                      {canViewTargets() ? (
-                        <div className="text-contrast-medium">
-                          {(() => {
-                            const targets = parseTargets(
-                              signal.targets,
-                              signal.direction
-                            );
-                            const hitCount = targets.filter(
-                              (t) => t.status === "hit"
-                            ).length;
-                            return `${hitCount}/${targets.length} targets hit`;
-                          })()}
-                          {stopLossROI && (
-                            <span className="ml-2 text-[var(--color-secondary)]">
-                              • SL: {stopLossROI}% ROI
-                            </span>
+                              <motion.button
+                                onClick={() => handleEdit(signal, "signal")}
+                                className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
+                                title="Edit Signal"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => handleDelete(signal.id, "signal")}
+                                className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
+                                title="Delete Signal"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </motion.button>
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex items-center text-contrast-medium">
-                          <Lock className="w-3 h-3 mr-1" />
-                          <span>Premium features locked</span>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            );
-          }
-
-          // Grid view (existing code)
-          return (
-            <div
-              key={signal.id}
-              id={`signal-card-${signal.id}`}
-              ref={(el) => (cardRefs.current[signal.id] = el)} // store ref
-              className="lego-card group"
-            >
-              <div className="p-5">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        signal.direction === "buy"
-                          ? "bg-[var(--color-accent1)]"
-                          : "bg-[var(--color-secondary)]"
-                      }`}
-                    />
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
-                      <img
-                        src={`/assets/${signal.coin.toLowerCase()}.svg`}
-                        alt={`${signal.coin} icon`}
-                        className="w-5 h-5 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "/assets/default.png";
-                        }}
-                        crossOrigin="anonymous" // <--- important for html-to-image
-                      />
-                    </div>
-                    <span className="text-lg font-bold text-contrast-high">
-                      {signal.coin}
-                    </span>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        signal.direction === "buy"
-                          ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
-                          : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
-                      }`}
-                    >
-                      {signal.direction.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end space-y-1">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        signal.status
-                      )}`}
-                    >
-                      {signal.status.toUpperCase()}
-                    </span>
-                    <motion.span
-                      className={`text-xs font-sans ${result.color}`}
-                      aria-label={`Result: ${result.text}`}
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {result.text}
-                    </motion.span>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-4">
-                  {/* Entry + Leverage */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="lego-card border-light p-3 shadow-sm">
-                      <div className="text-xs text-contrast-medium uppercase mb-1">
-                        Entry Price
-                      </div>
-                      <div className="text-sm font-bold text-contrast-high">
-                        ${signal.entry_price?.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="lego-card border-light p-3 shadow-sm">
-                      <div className="text-xs text-contrast-medium uppercase mb-1">
-                        Leverage
-                      </div>
-                      <div className="text-sm font-bold text-[var(--color-primary)]">
-                        {signal.leverage}x
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stop Loss */}
-                  <div className="lego-card border-dark p-3 bg-[var(--color-secondary)]/10">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-xs text-[var(--color-secondary)] uppercase">
-                        Stop Loss
-                      </div>
-                      {stopLossROI && (
-                        <span className="text-xs text-[var(--color-secondary)] font-medium">
-                          {stopLossROI}% ROI
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm font-bold text-[var(--color-secondary)]">
-                      {canViewTargets() ? (
-                        signal.stop_loss ? (
-                          `$${signal.stop_loss.toLocaleString()}`
-                        ) : (
-                          "N/A"
-                        )
-                      ) : (
-                        <span className="flex items-center text-contrast-medium text-xs">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Premium
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Profit Targets */}
-                  <div className="lego-card border-dark p-3 bg-[var(--color-accent1)]/10">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="text-xs text-[var(--color-accent1)] uppercase flex items-center">
-                        <Target className="w-3 h-3 mr-1" />
-                        Profit Targets
-                      </div>
-                      {!canViewTargets() && (
-                        <span className="flex items-center text-xs text-contrast-medium">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Premium
-                        </span>
-                      )}
-                    </div>
-
-                    {canViewTargets() ? (
-                      <div className="space-y-2">
-                        {(() => {
-                          const targets = parseTargets(
-                            signal.targets,
-                            signal.direction
-                          );
-                          if (targets.length === 0) {
-                            return (
-                              <div className="text-xs text-contrast-medium italic">
-                                No targets set
-                              </div>
-                            );
-                          }
-                          return targets
-                            .slice(0, 3)
-                            .map(({ label, price, status }, i) => {
-                              const targetROI = calculateROI(
-                                price,
-                                signal.entry_price,
-                                signal.leverage,
-                                signal.direction
-                              );
-                              return (
-                                <div
-                                  key={`${price}-${i}`}
-                                  className="flex justify-between items-center p-2 lego-card border-light text-xs"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-contrast-medium">
-                                      {label}
-                                    </span>
-                                    <span className="font-semibold text-contrast-high">
-                                      ${parseFloat(price || 0).toLocaleString()}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    {targetROI && (
-                                      <span
-                                        className={`px-1.5 py-0.5 rounded text-xs ${
-                                          parseFloat(targetROI) > 0
-                                            ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
-                                            : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
-                                        }`}
-                                      >
-                                        {parseFloat(targetROI) > 0 ? "+" : ""}
-                                        {targetROI}%
-                                      </span>
-                                    )}
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded text-xs ${
-                                        status === "hit"
-                                          ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
-                                          : status === "fail"
-                                          ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
-                                          : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
-                                      }`}
-                                    >
-                                      {status === "hit" && "✓"}
-                                      {status === "fail" && "✗"}
-                                      {status === "pending" && "○"}
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            });
-                        })()}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {[1, 2, 3].map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-6 lego-card bg-gradient-to-r from-[var(--color-card-bg)] via-[var(--color-card-hover)] to-[var(--color-card-bg)] relative overflow-hidden"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
-                            <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-contrast-medium">
-                              T{i + 1}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-5 py-3 border-t border-light bg-[var(--color-card-bg)]/50 rounded-b-xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-xs text-contrast-medium">
-                    <Clock className="w-3 h-3 mr-1" />
-                    <span>{formatDate(signal.created_at)}</span>
-                  </div>
-
-                  {isAdmin() && (
-                    <div className="flex space-x-1 md:space-x-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* DOWNLOAD */}
-                      <motion.button
-                        onClick={() =>
-                          handleDownload(
-                            signal.id,
-                            `signal-${signal.coin}-${signal.id}.png`
-                          )
-                        }
-                        className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                        title="Download Signal Card as image"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Download className="h-3 w-3" />
-                      </motion.button>
-
-                      <motion.button
-                        onClick={() => handleEdit(signal, "signal")}
-                        className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
-                        title="Edit Signal"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </motion.button>
-                      <motion.button
-                        onClick={() => handleDelete(signal.id, "signal")}
-                        className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
-                        title="Delete Signal"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </motion.button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        );
+      })}
 
       {/* Empty State */}
       {filteredSignals.length === 0 && (
