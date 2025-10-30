@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
@@ -27,6 +27,7 @@ const ProductApp = () => {
   const [editingItem, setEditingItem] = useState(null);
   const { user, isAdmin, isPremium } = useAuth();
   const { darkMode } = useTheme();
+  const didInitialFetch = useRef(false);
 
   const isFree = () => !isAdmin() && !isPremium();
 
@@ -44,6 +45,8 @@ const ProductApp = () => {
   });
 
   useEffect(() => {
+    if (didInitialFetch.current) return;
+    didInitialFetch.current = true;
     fetchData();
   }, []);
 

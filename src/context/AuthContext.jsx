@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { authAPI } from "../utils/api";
 import { STORAGE_KEYS, USER_ROLES } from "../constants";
 
@@ -15,8 +15,11 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const didInit = useRef(false);
 
   useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
     // Check if user is logged in on app start
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     const userData = localStorage.getItem(STORAGE_KEYS.USER);
