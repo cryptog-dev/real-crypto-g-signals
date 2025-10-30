@@ -38,3 +38,4 @@ export const SOCIAL_LINKS = {
 };
 
 export const CONTACT_EMAIL = "therealcryptog.official@gmail.com";
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";

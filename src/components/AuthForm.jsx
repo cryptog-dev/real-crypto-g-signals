@@ -1,6 +1,7 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { ThemeContext } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { GOOGLE_CLIENT_ID } from "../constants";
 import {
   Eye,
   EyeOff,
@@ -26,12 +27,103 @@ const AuthForm = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [formErrors, setFormErrors] = useState({});
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
   const { themeName } = useContext(ThemeContext);
+  const googleBtnRef = useRef(null);
+
+  useEffect(() => {
+    const existing = document.getElementById("google-identity-services");
+    const ensureRender = () => {
+      if (!window.google || !window.google.accounts || !window.google.accounts.id) return;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            const credential = response?.credential;
+            if (!credential) return;
+            setError("");
+            setSuccess("");
+            setGoogleLoading(true);
+            try {
+              const result = await loginWithGoogle(credential);
+              if (!result.success) {
+                setError(result.error || "Google login failed");
+              } else {
+                setSuccess("Login successful! Redirecting...");
+              }
+            } catch {
+              setError("Google login failed");
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
+          ux_mode: "popup",
+          auto_select: false,
+        });
+        if (googleBtnRef.current) {
+          while (googleBtnRef.current.firstChild) googleBtnRef.current.removeChild(googleBtnRef.current.firstChild);
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: "outline",
+            size: "large",
+            width: 320,
+            type: isLogin ? "standard" : "standard",
+            text: isLogin ? "signin_with" : "signup_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+          });
+        }
+      } catch {
+        void 0;
+      }
+    };
+
+    if (!existing) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.id = "google-identity-services";
+      script.onload = ensureRender;
+      document.body.appendChild(script);
+    } else {
+      ensureRender();
+    }
+  }, [isLogin, loginWithGoogle]);
+
+  const handleGoogleClick = () => {
+    setError("");
+    setSuccess("");
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      setGoogleLoading(true);
+      let clicked = false;
+      try {
+        const innerBtn =
+          googleBtnRef.current?.querySelector('div[role="button"]') ||
+          googleBtnRef.current?.firstChild;
+        if (innerBtn && typeof innerBtn.click === "function") {
+          innerBtn.click();
+          clicked = true;
+        }
+      } catch {
+        // ignore
+      }
+      if (!clicked) {
+        try {
+          window.google.accounts.id.prompt();
+        } catch {
+          setGoogleLoading(false);
+          setError("Google is unavailable. Try again later.");
+        }
+      }
+    } else {
+      setError("Google is unavailable. Try again later.");
+    }
+  };
 
   // Check password strength and update state
   const checkPasswordStrength = (password) => {
@@ -510,6 +602,47 @@ const AuthForm = () => {
                     "Create Account"
                   )}
                 </button>
+              </motion.div>
+
+              {/* Divider */}
+              <div className="flex items-center my-5">
+                <div className="flex-1 h-px bg-[var(--color-border-light)]" />
+                <span className="mx-3 text-xs text-contrast-medium font-sans">or</span>
+                <div className="flex-1 h-px bg-[var(--color-border-light)]" />
+              </div>
+
+              {/* Google Sign-In Button (Themed) */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.32 }}
+              >
+                <button
+                  type="button"
+                  onClick={handleGoogleClick}
+                  disabled={loading || googleLoading}
+                  className="w-full py-3 px-4 rounded-lg font-medium font-sans border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] bg-[var(--color-card-bg)] text-contrast-high transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {googleLoading ? (
+                    <>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                      <span>Connecting to Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      {/* Minimal Google G icon */}
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-5 w-5">
+                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C33.64 6.053 29.083 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"/>
+                        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.817C14.655 16.108 18.961 13 24 13c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C33.64 6.053 29.083 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                        <path fill="#4CAF50" d="M24 44c5.176 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.139 35.091 26.715 36 24 36c-5.202 0-9.62-3.317-11.283-7.946l-6.533 5.032C9.5 39.556 16.227 44 24 44z"/>
+                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.793 2.237-2.231 4.166-4.084 5.565l.003-.002 6.19 5.238C39.011 36.798 44 31.5 44 24c0-1.341-.138-2.651-.389-3.917z"/>
+                      </svg>
+                      <span>{isLogin ? "Continue with Google" : "Sign up with Google"}</span>
+                    </>
+                  )}
+                </button>
+                {/* Hidden GIS-rendered button for programmatic trigger */}
+                <div ref={googleBtnRef} className="hidden" />
               </motion.div>
 
               {/* Toggle between Login/Register */}

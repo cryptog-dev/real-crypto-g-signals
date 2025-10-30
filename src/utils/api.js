@@ -47,7 +47,7 @@ api.interceptors.response.use(
 
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.USER);
@@ -65,6 +65,7 @@ export const authAPI = {
   login: (credentials) => api.post("/auth/token/", credentials),
   refreshToken: (refresh) => api.post("/auth/token/refresh/", { refresh }),
   getUserInfo: () => api.get("/auth/user/"),
+  googleLogin: (payload) => api.post("/auth/google/", payload),
 };
 
 // Blogs API
