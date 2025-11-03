@@ -13,7 +13,7 @@ export default defineConfig({
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
         name: "Real Crypto G Signals",
-        short_name: "CryptoG",
+        short_name: "Signals",
         description: "Real Crypto G Signals Platform",
         theme_color: "#ffffff",
         icons: [
