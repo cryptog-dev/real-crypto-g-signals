@@ -18,7 +18,7 @@ const RecentBlogs = ({ blogs, formatDate }) => (
 
     {/* Blog List */}
     <div className="space-y-3">
-      {blogs.slice(0, 3).map((blog) => (
+      {blogs.slice(0, 7).map((blog) => (
         <Link
           to={`/blog/${blog.id}`}
           key={blog.id}
@@ -33,7 +33,8 @@ const RecentBlogs = ({ blogs, formatDate }) => (
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "https://placehold.co/400x400/4A4B68/F8F6F2?text=No+Image";
+                    e.target.src =
+                      "https://placehold.co/400x400/4A4B68/F8F6F2?text=No+Image";
                   }}
                 />
               </div>
@@ -56,8 +57,12 @@ const RecentBlogs = ({ blogs, formatDate }) => (
       {blogs.length === 0 && (
         <div className="text-center py-6">
           <FileText className="h-8 w-8 text-contrast-medium/30 mx-auto mb-2" />
-          <p className="text-sm text-contrast-medium font-sans">No Market Insights Yet</p>
-          <p className="text-xs text-contrast-medium/70 mt-1 font-sans">New analysis will appear here soon</p>
+          <p className="text-sm text-contrast-medium font-sans">
+            No Market Insights Yet
+          </p>
+          <p className="text-xs text-contrast-medium/70 mt-1 font-sans">
+            New analysis will appear here soon
+          </p>
         </div>
       )}
     </div>

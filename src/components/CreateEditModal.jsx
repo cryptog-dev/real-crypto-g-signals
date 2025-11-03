@@ -1,9 +1,24 @@
 import React, { useState } from "react";
 import {
-  X, Save, Plus, Type, AlignLeft, Image,
-  ArrowUp, ArrowDown, DollarSign, Zap, Shield,
-  Target, CheckCircle, Clock, AlertCircle,
-  Upload, Trash2, HelpCircle, TrendingUp
+  X,
+  Save,
+  Plus,
+  Type,
+  AlignLeft,
+  Image,
+  ArrowUp,
+  ArrowDown,
+  DollarSign,
+  Zap,
+  Shield,
+  Target,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Upload,
+  Trash2,
+  HelpCircle,
+  TrendingUp,
 } from "lucide-react";
 
 const CreateEditModal = ({
@@ -21,8 +36,10 @@ const CreateEditModal = ({
 
   if (!show) return null;
 
-  const labelClass = "flex items-center gap-2 text-sm text-contrast-high font-sans";
-  const inputClass = "w-full px-3 py-2.5 border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card-bg)] text-contrast-high transition-all duration-200";
+  const labelClass =
+    "flex items-center gap-2 text-sm text-contrast-high font-sans";
+  const inputClass =
+    "w-full px-3 py-2.5 border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-card-bg)] text-contrast-high transition-all duration-200";
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -43,7 +60,7 @@ const CreateEditModal = ({
 
   const addTarget = () => {
     let currentTargetsObj = {};
-    
+
     try {
       if (formData.targets) {
         // Try to parse as JSON first
@@ -52,17 +69,20 @@ const CreateEditModal = ({
     } catch (e) {
       // If JSON parsing fails, try parsing as comma-separated values
       if (formData.targets) {
-        const targetArray = formData.targets.split(',').map(t => t.trim()).filter(t => t);
-        targetArray.forEach(target => {
-          currentTargetsObj[target] = 'pending';
+        const targetArray = formData.targets
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t);
+        targetArray.forEach((target) => {
+          currentTargetsObj[target] = "pending";
         });
       }
     }
-    
+
     const entryPrice = parseFloat(formData.entry_price || 0);
     const newTarget = (entryPrice * 1.05).toFixed(2);
-    currentTargetsObj[newTarget] = 'pending';
-    
+    currentTargetsObj[newTarget] = "pending";
+
     setFormData({ ...formData, targets: JSON.stringify(currentTargetsObj) });
   };
 
@@ -80,11 +100,18 @@ const CreateEditModal = ({
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-contrast-high flex items-center justify-center gap-2 font-[Outfit]">
-            {editingItem ? <Save className="h-5 w-5 text-[var(--color-primary)]" /> : <Plus className="h-5 w-5 text-[var(--color-accent1)]" />}
-            {editingItem ? "Update" : "Craft"} {modalType === "blog" ? "Market Insight" : "Trade Signal"}
+            {editingItem ? (
+              <Save className="h-5 w-5 text-[var(--color-primary)]" />
+            ) : (
+              <Plus className="h-5 w-5 text-[var(--color-accent1)]" />
+            )}
+            {editingItem ? "Update" : "Craft"}{" "}
+            {modalType === "blog" ? "Market Insight" : "Trade Signal"}
           </h2>
           <p className="text-contrast-medium text-sm mt-1 font-sans">
-            {editingItem ? "Refine your trading content" : "Create new market intelligence"}
+            {editingItem
+              ? "Refine your trading content"
+              : "Create new market intelligence"}
           </p>
         </div>
 
@@ -99,7 +126,9 @@ const CreateEditModal = ({
                 <input
                   type="text"
                   value={formData.title || ""}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   className={inputClass}
                   placeholder="Enter market insight title"
                   required
@@ -108,11 +137,14 @@ const CreateEditModal = ({
 
               <div>
                 <label className={labelClass}>
-                  <AlignLeft className="h-4 w-4 text-[var(--color-primary)]" /> Content
+                  <AlignLeft className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                  Content
                 </label>
                 <textarea
                   value={formData.content || ""}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, content: e.target.value })
+                  }
                   rows={5}
                   className={inputClass}
                   placeholder="Write your market insights..."
@@ -122,7 +154,8 @@ const CreateEditModal = ({
 
               <div>
                 <label className={labelClass}>
-                  <Image className="h-4 w-4 text-[var(--color-primary)]" /> Image
+                  <Image className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                  Image
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -164,16 +197,38 @@ const CreateEditModal = ({
               {/* Trading Pair */}
               <div>
                 <label className={labelClass}>
-                  <TrendingUp className="h-4 w-4 text-[var(--color-primary)]" /> Trading Pair
+                  <TrendingUp className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                  Trading Pair
                 </label>
                 <input
                   type="text"
                   value={formData.coin || ""}
-                  onChange={(e) => setFormData({ ...formData, coin: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, coin: e.target.value })
+                  }
                   className={inputClass}
                   placeholder="e.g., BTC/USDT"
                   required
                 />
+              </div>
+
+              {/* Access Type */}
+              <div>
+                <label className={labelClass}>
+                  <Shield className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                  Access Type
+                </label>
+                <select
+                  value={formData.access_type || "free"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, access_type: e.target.value })
+                  }
+                  className={inputClass}
+                  required
+                >
+                  <option value="free">Free</option>
+                  <option value="premium">Premium</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -189,7 +244,9 @@ const CreateEditModal = ({
                   </label>
                   <select
                     value={formData.direction || "buy"}
-                    onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, direction: e.target.value })
+                    }
                     className={inputClass}
                     required
                   >
@@ -201,14 +258,17 @@ const CreateEditModal = ({
                 {/* Leverage */}
                 <div>
                   <label className={labelClass}>
-                    <Zap className="h-4 w-4 text-[var(--color-primary)]" /> Leverage
+                    <Zap className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                    Leverage
                   </label>
                   <input
                     type="number"
                     min="1"
                     max="125"
                     value={formData.leverage || ""}
-                    onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, leverage: e.target.value })
+                    }
                     className={inputClass}
                     placeholder="10x"
                     required
@@ -220,13 +280,16 @@ const CreateEditModal = ({
                 {/* Entry Price */}
                 <div>
                   <label className={labelClass}>
-                    <DollarSign className="h-4 w-4 text-[var(--color-primary)]" /> Entry Price
+                    <DollarSign className="h-4 w-4 text-[var(--color-primary)]" />{" "}
+                    Entry Price
                   </label>
                   <input
                     type="number"
                     step="0.0001"
                     value={formData.entry_price || ""}
-                    onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, entry_price: e.target.value })
+                    }
                     className={inputClass}
                     placeholder="0.00"
                     required
@@ -236,13 +299,16 @@ const CreateEditModal = ({
                 {/* Stop Loss */}
                 <div>
                   <label className={labelClass}>
-                    <Shield className="h-4 w-4 text-[var(--color-secondary)]" /> Stop Loss
+                    <Shield className="h-4 w-4 text-[var(--color-secondary)]" />{" "}
+                    Stop Loss
                   </label>
                   <input
                     type="number"
                     step="0.0001"
                     value={formData.stop_loss || ""}
-                    onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stop_loss: e.target.value })
+                    }
                     className={inputClass}
                     placeholder="0.00"
                     required
@@ -254,7 +320,8 @@ const CreateEditModal = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className={labelClass}>
-                    <Target className="h-4 w-4 text-[var(--color-accent1)]" /> Targets
+                    <Target className="h-4 w-4 text-[var(--color-accent1)]" />{" "}
+                    Targets
                   </label>
                   <div className="flex items-center gap-2">
                     <button
@@ -279,15 +346,21 @@ const CreateEditModal = ({
                 {showTargetHelper && (
                   <div className="bg-[var(--color-primary)]/10 border border-[var(--color-border-light)] rounded-lg p-3 mb-2 text-sm text-[var(--color-primary)] font-sans">
                     <div className="space-y-2">
-                      <div className="font-medium">Enter targets in JSON format with price:status pairs:</div>
+                      <div className="font-medium">
+                        Enter targets in JSON format with price:status pairs:
+                      </div>
                       <div className="text-xs opacity-80">
-                        Example: {'{"45000": "pending", "47000": "hit", "49000": "pending"}'}
+                        Example:{" "}
+                        {
+                          '{"45000": "pending", "47000": "hit", "49000": "pending"}'
+                        }
                       </div>
                       <div className="text-xs opacity-80">
                         Status options: "pending", "hit", "fail"
                       </div>
                       <div className="text-xs opacity-80">
-                        Legacy format (comma-separated) is also supported: "45000, 47000, 49000"
+                        Legacy format (comma-separated) is also supported:
+                        "45000, 47000, 49000"
                       </div>
                     </div>
                   </div>
@@ -296,7 +369,9 @@ const CreateEditModal = ({
                 <textarea
                   rows={3}
                   value={formData.targets || ""}
-                  onChange={(e) => setFormData({ ...formData, targets: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, targets: e.target.value })
+                  }
                   className={inputClass}
                   placeholder='{"45000": "pending", "47000": "hit", "49000": "pending"}'
                   required
@@ -317,7 +392,9 @@ const CreateEditModal = ({
                 </label>
                 <select
                   value={formData.status || "pending"}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className={inputClass}
                   required
                 >
@@ -342,7 +419,11 @@ const CreateEditModal = ({
               type="submit"
               className="lego-button flex items-center gap-2 px-5 py-2 bg-[var(--color-primary)] text-white rounded-lg font-medium font-sans"
             >
-              {editingItem ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingItem ? (
+                <Save className="h-4 w-4" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
               {editingItem ? "Update" : "Create"}
             </button>
           </div>

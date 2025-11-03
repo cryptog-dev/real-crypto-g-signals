@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -16,6 +22,134 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as htmlToImage from "html-to-image";
+
+/* ---------- Helper utilities (moved out of component to avoid re-creation) ---------- */
+
+const parseTargets = (targetsString, direction = "buy") => {
+  if (!targetsString) return [];
+  try {
+    let targets = [];
+    if (typeof targetsString === "object" && targetsString !== null) {
+      targets = Object.entries(targetsString).map(([price, status], index) => ({
+        label: `T${index + 1}`,
+        price: price,
+        status: status || "pending",
+        numericPrice: parseFloat(price) || 0,
+      }));
+    } else if (typeof targetsString === "string") {
+      try {
+        const parsed = JSON.parse(targetsString);
+        if (
+          typeof parsed === "object" &&
+          !Array.isArray(parsed) &&
+          parsed !== null
+        ) {
+          targets = Object.entries(parsed).map(([price, status], index) => ({
+            label: `T${index + 1}`,
+            price: price,
+            status: status || "pending",
+            numericPrice: parseFloat(price) || 0,
+          }));
+        }
+      } catch (jsonError) {
+        if (targetsString.includes(",")) {
+          targets = targetsString
+            .split(",")
+            .map((price) => price.trim())
+            .filter((price) => price)
+            .map((price, index) => ({
+              label: `T${index + 1}`,
+              price: price,
+              status: "pending",
+              numericPrice: parseFloat(price) || 0,
+            }));
+        } else if (targetsString.trim()) {
+          targets = [
+            {
+              label: "T1",
+              price: targetsString.trim(),
+              status: "pending",
+              numericPrice: parseFloat(targetsString.trim()) || 0,
+            },
+          ];
+        }
+      }
+    }
+    const sortedTargets = [...targets].sort((a, b) => {
+      return direction === "buy"
+        ? a.numericPrice - b.numericPrice
+        : b.numericPrice - a.numericPrice;
+    });
+    return sortedTargets.map((target, index) => ({
+      ...target,
+      label: `T${index + 1}`,
+    }));
+  } catch (error) {
+    console.warn("Failed to parse targets:", targetsString, error);
+    return [];
+  }
+};
+
+const calculateROI = (targetPrice, entryPrice, leverage, direction) => {
+  if (!targetPrice || !entryPrice || !leverage) return null;
+  const entry = parseFloat(entryPrice);
+  const target = parseFloat(targetPrice);
+  const lev = parseFloat(leverage);
+  const priceChange =
+    direction === "buy"
+      ? ((target - entry) / entry) * 100
+      : ((entry - target) / entry) * 100;
+  return (priceChange * lev).toFixed(1);
+};
+
+const calculateStopLossROI = (stopLoss, entryPrice, leverage, direction) => {
+  if (!stopLoss || !entryPrice || !leverage) return null;
+  const entry = parseFloat(entryPrice);
+  const sl = parseFloat(stopLoss);
+  const lev = parseFloat(leverage);
+  const priceChange =
+    direction === "buy"
+      ? ((sl - entry) / entry) * 100
+      : ((entry - sl) / entry) * 100;
+  return (priceChange * lev).toFixed(1);
+};
+
+const getResultText = (signal) => {
+  const targets = parseTargets(signal.targets);
+  const hitTargets = targets.filter((t) => t.status === "hit");
+  const failedTargets = targets.filter((t) => t.status === "fail");
+  const allHit = targets.length > 0 && hitTargets.length === targets.length;
+  const hasStopLoss = signal.stop_loss && parseFloat(signal.stop_loss) > 0;
+
+  if (signal.status === "success" && allHit) {
+    return { text: "All Targets Hit", color: "text-[var(--color-accent1)]" };
+  } else if (signal.status === "success" && hitTargets.length > 0) {
+    const hitTargetLabels = targets
+      .filter((t) => t.status === "hit")
+      .map((t) => t.label);
+    return {
+      text: `${hitTargetLabels.join(", ")} Hit`,
+      color: "text-[var(--color-accent1)]",
+    };
+  } else if (signal.status === "fail" && hasStopLoss) {
+    return { text: "Stop Loss Hit", color: "text-[var(--color-secondary)]" };
+  } else if (hitTargets.length > 0 && signal.status === "pending") {
+    const hitTargetLabels = targets
+      .filter((t) => t.status === "hit")
+      .map((t) => t.label);
+    return {
+      text: `${hitTargetLabels.join(", ")} Hit`,
+      color: "text-[var(--color-accent1)]",
+    };
+  } else {
+    return {
+      text: "Awaiting Result",
+      color: "text-[var(--color-text-secondary)]",
+    };
+  }
+};
+
+/* ---------- Component ---------- */
 
 const SignalsList = ({
   signals,
@@ -37,7 +171,7 @@ const SignalsList = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid"); // "grid" or "list"
   const [collapsed, setCollapsed] = useState(() => ({
-    premium: (typeof isFree === "function" && isFree()) ? true : false,
+    premium: typeof isFree === "function" && isFree() ? true : false,
     free: false,
   }));
   const [compact, setCompact] = useState({ premium: false, free: false });
@@ -74,200 +208,80 @@ const SignalsList = ({
     }
   }, [searchParams]);
 
-  const filteredSignals = signals.filter((signal) => {
-    const matchesStatus =
-      filters.status === "all" ||
-      signal.status.toLowerCase() === filters.status.toLowerCase();
-    const matchesDirection =
-      filters.direction === "all" ||
-      signal.direction.toLowerCase() === filters.direction.toLowerCase();
-    const matchesCoin =
-      filters.coin === "all" ||
-      signal.coin.toLowerCase() === filters.coin.toLowerCase();
-    return matchesStatus && matchesDirection && matchesCoin;
-  });
+  const filteredSignals = useMemo(() => {
+    return signals.filter((signal) => {
+      const matchesStatus =
+        filters.status === "all" ||
+        signal.status.toLowerCase() === filters.status.toLowerCase();
+      const matchesDirection =
+        filters.direction === "all" ||
+        signal.direction.toLowerCase() === filters.direction.toLowerCase();
+      const matchesCoin =
+        filters.coin === "all" ||
+        signal.coin.toLowerCase() === filters.coin.toLowerCase();
+      return matchesStatus && matchesDirection && matchesCoin;
+    });
+  }, [signals, filters]);
 
-  const uniqueCoins = [...new Set(signals.map((signal) => signal.coin))].sort();
+  const uniqueCoins = useMemo(() => {
+    return [...new Set(signals.map((signal) => signal.coin))].sort();
+  }, [signals]);
 
   const getAccessType = (s) => (s.access_type || "free").toLowerCase();
 
-  const handleFilterChange = (type, value) => {
-    setFilters((prev) => {
-      const newFilters = { ...prev, [type]: value };
+  const handleFilterChange = useCallback(
+    (type, value) => {
+      setFilters((prev) => ({ ...prev, [type]: value }));
       if (type === "status") {
-        if (value === "all") {
-          setSearchParams({});
-        } else {
-          setSearchParams({ status: value });
-        }
+        if (value === "all") setSearchParams({});
+        else setSearchParams({ status: value });
       }
-      return newFilters;
-    });
-    setIsDropdownOpen(false);
-  };
+      setIsDropdownOpen(false);
+    },
+    [setSearchParams]
+  );
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({ status: "all", direction: "all", coin: "all" });
     setSearchParams({});
-  };
+  }, [setSearchParams]);
 
-  const activeFilterCount = Object.values(filters).filter(
-    (value) => value !== "all"
-  ).length;
-  const canViewTargets = () => isPremium() || isAdmin();
+  const activeFilterCount = useMemo(
+    () => Object.values(filters).filter((value) => value !== "all").length,
+    [filters]
+  );
+  const canViewTargets = useCallback(
+    (signal) => {
+      if (isAdmin()) return true;
+      if (isPremium()) return true;
+      return signal?.access_type?.toLowerCase() === "free";
+    },
+    [isPremium, isAdmin]
+  );
 
-  /* ---------- Parsing / ROI helpers (unchanged) ---------- */
-  const parseTargets = (targetsString, direction = "buy") => {
-    if (!targetsString) return [];
-    try {
-      let targets = [];
-      if (typeof targetsString === "object" && targetsString !== null) {
-        targets = Object.entries(targetsString).map(
-          ([price, status], index) => ({
-            label: `T${index + 1}`,
-            price: price,
-            status: status || "pending",
-            numericPrice: parseFloat(price) || 0,
-          })
-        );
-      } else if (typeof targetsString === "string") {
-        try {
-          const parsed = JSON.parse(targetsString);
-          if (
-            typeof parsed === "object" &&
-            !Array.isArray(parsed) &&
-            parsed !== null
-          ) {
-            targets = Object.entries(parsed).map(([price, status], index) => ({
-              label: `T${index + 1}`,
-              price: price,
-              status: status || "pending",
-              numericPrice: parseFloat(price) || 0,
-            }));
-          }
-        } catch (jsonError) {
-          if (targetsString.includes(",")) {
-            targets = targetsString
-              .split(",")
-              .map((price) => price.trim())
-              .filter((price) => price)
-              .map((price, index) => ({
-                label: `T${index + 1}`,
-                price: price,
-                status: "pending",
-                numericPrice: parseFloat(price) || 0,
-              }));
-          } else if (targetsString.trim()) {
-            targets = [
-              {
-                label: "T1",
-                price: targetsString.trim(),
-                status: "pending",
-                numericPrice: parseFloat(targetsString.trim()) || 0,
-              },
-            ];
-          }
-        }
-      }
-      const sortedTargets = [...targets].sort((a, b) => {
-        return direction === "buy"
-          ? a.numericPrice - b.numericPrice
-          : b.numericPrice - a.numericPrice;
-      });
-      return sortedTargets.map((target, index) => ({
-        ...target,
-        label: `T${index + 1}`,
-      }));
-    } catch (error) {
-      console.warn("Failed to parse targets:", targetsString, error);
-      return [];
-    }
-  };
-
-  const getResultText = (signal) => {
-    const targets = parseTargets(signal.targets);
-    const hitTargets = targets.filter((t) => t.status === "hit");
-    const failedTargets = targets.filter((t) => t.status === "fail");
-    const allHit = targets.length > 0 && hitTargets.length === targets.length;
-    const hasStopLoss = signal.stop_loss && parseFloat(signal.stop_loss) > 0;
-
-    if (signal.status === "success" && allHit) {
-      return { text: "All Targets Hit", color: "text-[var(--color-accent1)]" };
-    } else if (signal.status === "success" && hitTargets.length > 0) {
-      const hitTargetLabels = targets
-        .filter((t) => t.status === "hit")
-        .map((t) => t.label);
-      return {
-        text: `${hitTargetLabels.join(", ")} Hit`,
-        color: "text-[var(--color-accent1)]",
-      };
-    } else if (signal.status === "fail" && hasStopLoss) {
-      return { text: "Stop Loss Hit", color: "text-[var(--color-secondary)]" };
-    } else if (hitTargets.length > 0 && signal.status === "pending") {
-      const hitTargetLabels = targets
-        .filter((t) => t.status === "hit")
-        .map((t) => t.label);
-      return {
-        text: `${hitTargetLabels.join(", ")} Hit`,
-        color: "text-[var(--color-accent1)]",
-      };
-    } else {
-      return {
-        text: "Awaiting Result",
-        color: "text-[var(--color-text-secondary)]",
-      };
-    }
-  };
-
-  const calculateROI = (targetPrice, entryPrice, leverage, direction) => {
-    if (!targetPrice || !entryPrice || !leverage) return null;
-    const entry = parseFloat(entryPrice);
-    const target = parseFloat(targetPrice);
-    const lev = parseFloat(leverage);
-    const priceChange =
-      direction === "buy"
-        ? ((target - entry) / entry) * 100
-        : ((entry - target) / entry) * 100;
-    return (priceChange * lev).toFixed(1);
-  };
-
-  const calculateStopLossROI = (stopLoss, entryPrice, leverage, direction) => {
-    if (!stopLoss || !entryPrice || !leverage) return null;
-    const entry = parseFloat(entryPrice);
-    const sl = parseFloat(stopLoss);
-    const lev = parseFloat(leverage);
-    const priceChange =
-      direction === "buy"
-        ? ((sl - entry) / entry) * 100
-        : ((entry - sl) / entry) * 100;
-    return (priceChange * lev).toFixed(1);
-  };
+  /* parsing/ROI helpers moved to module scope above to avoid re-creation per render */
 
   /* ---------- NEW: download logic ---------- */
-  const handleDownload = async (id) => {
+  const handleDownload = useCallback(async (id) => {
     const node = cardRefs.current[id];
-    if (node) {
-      try {
-        // detect background color of the card
-        const computedStyle = getComputedStyle(node);
-        const bgColor = computedStyle.backgroundColor || "#000000"; // fallback for dark mode
-
-        const dataUrl = await htmlToImage.toPng(node, {
-          quality: 1,
-          cacheBust: true,
-          useCORS: true,
-          backgroundColor: bgColor, // match card’s actual background
-        });
-
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `signal-${id}.png`;
-        link.click();
-      } catch (error) {
-        console.error("Download failed:", error);
-      }
+    if (!node) return;
+    try {
+      const computedStyle = getComputedStyle(node);
+      const bgColor = computedStyle.backgroundColor || "#000000";
+      const dataUrl = await htmlToImage.toPng(node, {
+        quality: 1,
+        cacheBust: true,
+        useCORS: true,
+        backgroundColor: bgColor,
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `signal-${id}.png`;
+      link.click();
+    } catch (error) {
+      console.error("Download failed:", error);
     }
-  };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -500,7 +514,7 @@ const SignalsList = ({
       )}
 
       {/* Grouped sections by access_type: Premium then Free */}
-      {(["premium", "free"]).map((type) => {
+      {["premium", "free"].map((type) => {
         const items = filteredSignals.filter((s) => getAccessType(s) === type);
         if (items.length === 0) return null;
         return (
@@ -508,11 +522,15 @@ const SignalsList = ({
             <div className="flex items-center justify-between mt-6">
               <h3 className="text-lg font-semibold text-contrast-high font-heading">
                 {type === "premium" ? "Premium" : "Free"}
-                <span className="ml-2 text-contrast-medium text-sm">({items.length})</span>
+                <span className="ml-2 text-contrast-medium text-sm">
+                  ({items.length})
+                </span>
               </h3>
               <div className="flex items-center gap-2">
                 <motion.button
-                  onClick={() => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }))}
+                  onClick={() =>
+                    setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }))
+                  }
                   className="lego-button px-3 py-1.5 border border-light bg-[var(--color-card-bg)] rounded-md text-xs"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -520,7 +538,9 @@ const SignalsList = ({
                   {collapsed[type] ? "Expand" : "Collapse"}
                 </motion.button>
                 <motion.button
-                  onClick={() => setCompact((prev) => ({ ...prev, [type]: !prev[type] }))}
+                  onClick={() =>
+                    setCompact((prev) => ({ ...prev, [type]: !prev[type] }))
+                  }
                   className="lego-button px-3 py-1.5 border border-light bg-[var(--color-card-bg)] rounded-md text-xs"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -531,7 +551,15 @@ const SignalsList = ({
             </div>
 
             {!collapsed[type] && (
-              <div className={compact[type] ? "space-y-2" : (viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5" : "space-y-3") }>
+              <div
+                className={
+                  compact[type]
+                    ? "space-y-2"
+                    : viewMode === "grid"
+                    ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"
+                    : "space-y-3"
+                }
+              >
                 {items.map((signal) => {
                   const stopLossROI = calculateStopLossROI(
                     signal.stop_loss,
@@ -543,25 +571,48 @@ const SignalsList = ({
 
                   if (compact[type]) {
                     return (
-                      <div key={signal.id} className="lego-card p-3 flex items-center justify-between">
+                      <div
+                        key={signal.id}
+                        className="lego-card p-3 flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border-light)] shadow-sm">
                             <img
                               src={`/assets/${signal.coin.toLowerCase()}.svg`}
                               alt={`${signal.coin} icon`}
                               className="w-4 h-4 object-contain"
-                              onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                              loading="lazy"
+                              decoding="async"
+                              onError={(e) => {
+                                e.currentTarget.src = "/assets/default.png";
+                              }}
                               crossOrigin="anonymous"
                             />
                           </div>
-                          <span className="text-sm font-semibold text-contrast-high">{signal.coin}</span>
-                          <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"}`}>
+                          <span className="text-sm font-semibold text-contrast-high">
+                            {signal.coin}
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                              signal.direction === "buy"
+                                ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
+                                : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
+                            }`}
+                          >
                             {signal.direction.toUpperCase()}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusColor(signal.status)}`}>{signal.status.toUpperCase()}</span>
-                          <span className="text-xs text-contrast-medium">{formatDate(signal.created_at)}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusColor(
+                              signal.status
+                            )}`}
+                          >
+                            {signal.status.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-contrast-medium">
+                            {formatDate(signal.created_at)}
+                          </span>
                         </div>
                       </div>
                     );
@@ -585,36 +636,64 @@ const SignalsList = ({
                                   src={`/assets/${signal.coin.toLowerCase()}.svg`}
                                   alt={`${signal.coin} icon`}
                                   className="w-6 h-6 object-contain"
-                                  onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/assets/default.png";
+                                  }}
                                   crossOrigin="anonymous"
                                 />
                               </div>
                               <div>
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-lg font-bold text-contrast-high">{signal.coin}</span>
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${signal.direction === "buy" ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light" : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"}`}>
+                                  <span className="text-lg font-bold text-contrast-high">
+                                    {signal.coin}
+                                  </span>
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      signal.direction === "buy"
+                                        ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)] border-light"
+                                        : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)] border-light"
+                                    }`}
+                                  >
                                     {signal.direction.toUpperCase()}
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-4 text-xs text-contrast-medium mt-1">
-                                  <span>Entry: ${signal.entry_price?.toLocaleString()}</span>
+                                  <span>
+                                    Entry: $
+                                    {signal.entry_price?.toLocaleString()}
+                                  </span>
                                   <span>Leverage: {signal.leverage}x</span>
-                                  <div className="flex items-center"><Clock className="w-3 h-3 mr-1" /><span>{formatDate(signal.created_at)}</span></div>
+                                  <div className="flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    <span>{formatDate(signal.created_at)}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
 
                             {/* Center - Status and Result */}
                             <div className="flex flex-col items-center space-y-1">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(signal.status)}`}>{signal.status.toUpperCase()}</span>
-                              <span className={`text-xs font-sans ${result.color}`}>{result.text}</span>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                  signal.status
+                                )}`}
+                              >
+                                {signal.status.toUpperCase()}
+                              </span>
+                              <span
+                                className={`text-xs font-sans ${result.color}`}
+                              >
+                                {result.text}
+                              </span>
                             </div>
 
                             {/* Right side - Targets and Actions */}
                             <div className="flex items-center space-x-4">
                               {/* Targets preview */}
                               <div className="text-right">
-                                {canViewTargets() ? (
+                                {canViewTargets(signal) ? (
                                   <div className="text-xs text-contrast-medium">
                                     {(() => {
                                       const targets = parseTargets(
@@ -638,32 +717,44 @@ const SignalsList = ({
                                     SL: {stopLossROI}% ROI
                                   </div>
                                 )}
-                                {canViewTargets() && (
+                                {canViewTargets(signal) && (
                                   <div className="mt-1 space-y-1">
                                     {(() => {
                                       const targets = parseTargets(
                                         signal.targets,
                                         signal.direction
                                       ).slice(0, 3);
-                                      return targets.map(({ label, price, status }, i) => (
-                                        <div key={`${price}-${i}`} className="flex items-center justify-between text-[11px]">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-contrast-medium">{label}</span>
-                                            <span className="font-medium text-contrast-high">${parseFloat(price || 0).toLocaleString()}</span>
-                                          </div>
-                                          <span
-                                            className={`px-1 py-0.5 rounded ${
-                                              status === "hit"
-                                                ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
-                                                : status === "fail"
-                                                ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
-                                                : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
-                                            }`}
+                                      return targets.map(
+                                        ({ label, price, status }, i) => (
+                                          <div
+                                            key={`${price}-${i}`}
+                                            className="flex items-center justify-between text-[11px]"
                                           >
-                                            {status}
-                                          </span>
-                                        </div>
-                                      ));
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-contrast-medium">
+                                                {label}
+                                              </span>
+                                              <span className="font-medium text-contrast-high">
+                                                $
+                                                {parseFloat(
+                                                  price || 0
+                                                ).toLocaleString()}
+                                              </span>
+                                            </div>
+                                            <span
+                                              className={`px-1 py-0.5 rounded ${
+                                                status === "hit"
+                                                  ? "bg-[var(--color-accent1)]/20 text-[var(--color-accent1)]"
+                                                  : status === "fail"
+                                                  ? "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
+                                                  : "bg-[var(--color-neutral-dark)]/20 text-contrast-medium"
+                                              }`}
+                                            >
+                                              {status}
+                                            </span>
+                                          </div>
+                                        )
+                                      );
                                     })()}
                                   </div>
                                 )}
@@ -691,7 +782,9 @@ const SignalsList = ({
                                     <Edit3 className="h-3 w-3" />
                                   </motion.button>
                                   <motion.button
-                                    onClick={() => handleDelete(signal.id, "signal")}
+                                    onClick={() =>
+                                      handleDelete(signal.id, "signal")
+                                    }
                                     className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
                                     title="Delete Signal"
                                     whileHover={{ scale: 1.1 }}
@@ -714,11 +807,18 @@ const SignalsList = ({
                                     src={`/assets/${signal.coin.toLowerCase()}.svg`}
                                     alt={`${signal.coin} icon`}
                                     className="w-5 h-5 object-contain"
-                                    onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "/assets/default.png";
+                                    }}
                                     crossOrigin="anonymous"
                                   />
                                 </div>
-                                <span className="text-base font-bold text-contrast-high">{signal.coin}</span>
+                                <span className="text-base font-bold text-contrast-high">
+                                  {signal.coin}
+                                </span>
                                 <span
                                   className={`px-2 py-1 text-xs font-medium rounded-full ${
                                     signal.direction === "buy"
@@ -749,7 +849,9 @@ const SignalsList = ({
                                       <Download className="h-3 w-3" />
                                     </motion.button>
                                     <motion.button
-                                      onClick={() => handleEdit(signal, "signal")}
+                                      onClick={() =>
+                                        handleEdit(signal, "signal")
+                                      }
                                       className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded"
                                       title="Edit Signal"
                                       whileHover={{ scale: 1.1 }}
@@ -758,7 +860,9 @@ const SignalsList = ({
                                       <Edit3 className="h-3 w-3" />
                                     </motion.button>
                                     <motion.button
-                                      onClick={() => handleDelete(signal.id, "signal")}
+                                      onClick={() =>
+                                        handleDelete(signal.id, "signal")
+                                      }
                                       className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
                                       title="Delete Signal"
                                       whileHover={{ scale: 1.1 }}
@@ -774,25 +878,35 @@ const SignalsList = ({
                             {/* Details row */}
                             <div className="grid grid-cols-2 gap-3 text-xs">
                               <div>
-                                <span className="text-contrast-medium">Entry:</span>
+                                <span className="text-contrast-medium">
+                                  Entry:
+                                </span>
                                 <span className="ml-1 font-semibold text-contrast-high">
                                   ${signal.entry_price?.toLocaleString()}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-contrast-medium">Leverage:</span>
+                                <span className="text-contrast-medium">
+                                  Leverage:
+                                </span>
                                 <span className="ml-1 font-semibold text-[var(--color-primary)]">
                                   {signal.leverage}x
                                 </span>
                               </div>
                               <div>
-                                <span className="text-contrast-medium">Result:</span>
-                                <span className={`ml-1 font-semibold ${result.color}`}>
+                                <span className="text-contrast-medium">
+                                  Result:
+                                </span>
+                                <span
+                                  className={`ml-1 font-semibold ${result.color}`}
+                                >
                                   {result.text}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-contrast-medium">Date:</span>
+                                <span className="text-contrast-medium">
+                                  Date:
+                                </span>
                                 <span className="ml-1 font-semibold text-contrast-high">
                                   {formatDate(signal.created_at)}
                                 </span>
@@ -801,7 +915,7 @@ const SignalsList = ({
 
                             {/* Targets row */}
                             <div className="text-xs">
-                              {canViewTargets() ? (
+                              {canViewTargets(signal) ? (
                                 <div className="text-contrast-medium">
                                   {(() => {
                                     const targets = parseTargets(
@@ -856,11 +970,17 @@ const SignalsList = ({
                                 src={`/assets/${signal.coin.toLowerCase()}.svg`}
                                 alt={`${signal.coin} icon`}
                                 className="w-5 h-5 object-contain"
-                                onError={(e) => { e.currentTarget.src = "/assets/default.png"; }}
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/assets/default.png";
+                                }}
                                 crossOrigin="anonymous"
                               />
                             </div>
-                            <span className="text-lg font-bold text-contrast-high">{signal.coin}</span>
+                            <span className="text-lg font-bold text-contrast-high">
+                              {signal.coin}
+                            </span>
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-full ${
                                 signal.direction === "buy"
@@ -926,7 +1046,7 @@ const SignalsList = ({
                               )}
                             </div>
                             <div className="text-sm font-bold text-[var(--color-secondary)]">
-                              {canViewTargets() ? (
+                              {canViewTargets(signal) ? (
                                 signal.stop_loss ? (
                                   `$${signal.stop_loss.toLocaleString()}`
                                 ) : (
@@ -956,7 +1076,7 @@ const SignalsList = ({
                               )}
                             </div>
 
-                            {canViewTargets() ? (
+                            {canViewTargets(signal) ? (
                               <div className="space-y-2">
                                 {(() => {
                                   const targets = parseTargets(
@@ -989,7 +1109,10 @@ const SignalsList = ({
                                               {label}
                                             </span>
                                             <span className="font-semibold text-contrast-high">
-                                              ${parseFloat(price || 0).toLocaleString()}
+                                              $
+                                              {parseFloat(
+                                                price || 0
+                                              ).toLocaleString()}
                                             </span>
                                           </div>
                                           <div className="flex items-center space-x-2">
@@ -1001,7 +1124,9 @@ const SignalsList = ({
                                                     : "bg-[var(--color-secondary)]/20 text-[var(--color-secondary)]"
                                                 }`}
                                               >
-                                                {parseFloat(targetROI) > 0 ? "+" : ""}
+                                                {parseFloat(targetROI) > 0
+                                                  ? "+"
+                                                  : ""}
                                                 {targetROI}%
                                               </span>
                                             )}
@@ -1079,7 +1204,9 @@ const SignalsList = ({
                                 <Edit3 className="h-3 w-3" />
                               </motion.button>
                               <motion.button
-                                onClick={() => handleDelete(signal.id, "signal")}
+                                onClick={() =>
+                                  handleDelete(signal.id, "signal")
+                                }
                                 className="lego-button p-1.5 text-contrast-medium hover:text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 rounded"
                                 title="Delete Signal"
                                 whileHover={{ scale: 1.1 }}
@@ -1129,4 +1256,4 @@ const SignalsList = ({
   );
 };
 
-export default SignalsList;
+export default React.memo(SignalsList);
