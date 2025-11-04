@@ -1,22 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Navigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { User, Mail, FileText, Edit3, Save, X } from "lucide-react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  User,
+  Mail,
+  FileText,
+  Edit3,
+  Save,
+  X,
+  ArrowLeft,
+  AlertCircle,
+} from "lucide-react";
 import { authAPI } from "../utils/api";
+import { image } from "framer-motion/client";
 
 const Profile = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const res = await authAPI.getUserInfo();
-        setProfileData(res.data);
-        setEditForm(res.data);
+        console.log("User info:", res.data);
+        const userData = {
+          ...res.data,
+          firstName: res.data.first_name,
+          lastName: res.data.last_name,
+          image: res.data.image,
+        };
+        setProfileData(userData);
+        setEditForm(userData);
       } catch (err) {
         console.error("Failed to load profile:", err);
       }
@@ -26,7 +46,11 @@ const Profile = () => {
   }, [user]);
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   if (!user) {
@@ -37,15 +61,66 @@ const Profile = () => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    // TODO: integrate save API
-    setProfileData(editForm);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Map the form data to the API expected format
+      const updateData = {
+        first_name: editForm.firstName || "",
+        last_name: editForm.lastName || "",
+        description: editForm.description || "",
+      };
+
+      const response = await authAPI.updateProfile(updateData);
+
+      // Update the local state with the new data, maintaining the camelCase format
+      const updatedData = {
+        ...editForm,
+        firstName: updateData.first_name,
+        lastName: updateData.last_name,
+        description: updateData.description,
+      };
+
+      setProfileData(updatedData);
+      setEditForm(updatedData);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Update failed:", err);
+      setError(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[var(--color-neutral-light)] pt-20 pb-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center space-x-2 text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Back</span>
+        </button>
+
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center space-x-2 text-red-600 dark:text-red-400"
+            >
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Profile Header Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -58,7 +133,7 @@ const Profile = () => {
             <div className="h-20 w-20 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center overflow-hidden">
               {profileData?.profilePhoto ? (
                 <img
-                  src={profileData.img}
+                  src={`https://res.cloudinary.com/dnswcgxwm/${profileData.image}`}
                   alt="Profile"
                   className="h-full w-full object-cover"
                 />
@@ -68,16 +143,48 @@ const Profile = () => {
             </div>
 
             {/* Name + Username */}
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--color-text-primary)] font-[Outfit]">
-                {profileData?.firstName || "First"} {profileData?.lastName || "Last"}
-              </h2>
-              <p className="text-sm text-contrast-medium font-sans mt-1">
-                @{profileData?.username || "trader"}
-              </p>
-              <p className="text-sm text-[var(--color-secondary)] font-medium mt-1">
-                {profileData?.email}
-              </p>
+            <div className="flex-1">
+              {isEditing ? (
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={editForm?.firstName || ""}
+                      onChange={handleChange}
+                      placeholder="First Name"
+                      className="lego-input px-3 py-2 w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    />
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={editForm?.lastName || ""}
+                      onChange={handleChange}
+                      placeholder="Last Name"
+                      className="lego-input px-3 py-2 w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    />
+                  </div>
+                  <p className="text-sm text-contrast-medium font-sans">
+                    @{profileData?.username || "trader"}
+                  </p>
+                  <p className="text-sm text-[var(--color-secondary)] font-medium">
+                    {profileData?.email}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-[var(--color-text-primary)] font-[Outfit]">
+                    {profileData?.firstName || "First"}{" "}
+                    {profileData?.lastName || "Last"}
+                  </h2>
+                  <p className="text-sm text-contrast-medium font-sans mt-1">
+                    @{profileData?.username || "trader"}
+                  </p>
+                  <p className="text-sm text-[var(--color-secondary)] font-medium mt-1">
+                    {profileData?.email}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
@@ -92,7 +199,8 @@ const Profile = () => {
                 name="description"
                 value={editForm?.description || ""}
                 onChange={handleChange}
-                className="lego-input mt-2 w-full"
+                placeholder="Tell us about yourself..."
+                className="lego-input mt-2 w-full px-3 py-2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] min-h-[100px] resize-y"
                 rows={4}
               />
             ) : (
@@ -108,14 +216,30 @@ const Profile = () => {
               <>
                 <button
                   onClick={handleSave}
-                  className="lego-button bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                  disabled={saving}
+                  className={`lego-button bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg flex items-center space-x-2 ${
+                    saving
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-[var(--color-primary)]/90"
+                  }`}
                 >
-                  <Save className="h-4 w-4" />
-                  <span>Save</span>
+                  {saving ? (
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  <span>{saving ? "Saving..." : "Save"}</span>
                 </button>
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="lego-button bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setError(null);
+                    setEditForm(profileData);
+                  }}
+                  disabled={saving}
+                  className={`lego-button bg-[var(--color-card-bg)] border border-[var(--color-border-light)] px-4 py-2 rounded-lg flex items-center space-x-2 hover:border-[var(--color-border-hover)] ${
+                    saving ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <X className="h-4 w-4" />
                   <span>Cancel</span>

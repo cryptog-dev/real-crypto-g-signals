@@ -30,7 +30,9 @@ const DropdownMenu = ({ trigger, children, align = "right" }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-2 w-64 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg shadow-lg z-50`}
+              className={`absolute ${
+                align === "right" ? "right-0" : "left-0"
+              } mt-2 w-64 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg shadow-lg z-50`}
             >
               <div className="p-3">{children}</div>
             </motion.div>
@@ -50,7 +52,7 @@ const Navbar = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const handleProfileClick = () => {
-    navigate('/profile');
+    navigate("/profile");
   };
 
   const menuVariants = {
@@ -61,14 +63,19 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 lego-card border-b border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] transition-colors duration-300 ${
-        darkMode ? "bg-[var(--color-neutral-light)]" : "bg-[var(--color-card-bg)]"
+        darkMode
+          ? "bg-[var(--color-neutral-light)]"
+          : "bg-[var(--color-card-bg)]"
       }`}
     >
       {/* Main Nav */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => navigate("/")}
+          >
             <img
               className="h-9 sm:h-12 w-auto transition-transform hover:scale-105"
               src={Logo}
@@ -82,7 +89,9 @@ const Navbar = () => {
             <button
               onClick={toggleDarkMode}
               className="lego-button p-2.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 rounded-lg border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)] transition-all"
-              aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label={
+                darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+              }
             >
               {darkMode ? (
                 <Sun className="h-5 w-5 text-[var(--color-accent2)]" />
@@ -96,35 +105,33 @@ const Navbar = () => {
               trigger={
                 <div className="flex items-center space-x-2 cursor-pointer bg-[var(--color-primary)]/10 px-3 py-2 rounded-full border border-[var(--color-border-light)] hover:border-[var(--color-border-hover)]">
                   <User className="h-5 w-5 text-[var(--color-primary)]" />
-                  <span className="text-sm font-medium">{user?.username || "Trader"}</span>
+                  <span className="text-sm font-medium">
+                    {user?.username || "Trader"}
+                  </span>
                 </div>
               }
             >
               {/* Profile Header */}
-              <div className="flex items-center space-x-3 mb-3">
+              <div
+                onClick={handleProfileClick}
+                className="flex items-center space-x-3 mb-3 p-2 rounded-lg hover:bg-[var(--color-primary)]/10 cursor-pointer transition-colors"
+              >
                 <div className="h-10 w-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
                   <User className="h-6 w-6 text-[var(--color-primary)]" />
                 </div>
                 <div>
                   <p className="font-semibold">{user?.username || "Trader"}</p>
-                  <p className="text-xs text-contrast-medium">Your Profile</p>
+                  <p className="text-xs text-contrast-medium">
+                    View your profile
+                  </p>
                 </div>
               </div>
               <hr className="my-2 border-[var(--color-border-light)]" />
-              {/* <button 
-                onClick={handleProfileClick}
-                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10"
-              >
-                View Profile
-              </button>
-              <button className="w-full text-left px-2 py-1 text-sm rounded hover:bg-[var(--color-primary)]/10">
-                Settings
-              </button> 
-              <hr className="my-2 border-[var(--color-border-light)]" /> */}
               <button
                 onClick={logout}
                 className="w-full text-left px-2 py-1 text-sm text-[var(--color-secondary)] rounded hover:bg-[var(--color-secondary)]/10"
               >
+                <LogOut className="h-4 w-4 inline-block mr-2" />
                 Logout
               </button>
             </DropdownMenu>
@@ -171,7 +178,7 @@ const Navbar = () => {
                 ) : (
                   <Moon className="h-5 w-5 text-[var(--color-primary)]" />
                 )}
-                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
               </button>
 
               {/* Profile Section */}
@@ -187,8 +194,10 @@ const Navbar = () => {
                     <User className="h-5 w-5 text-[var(--color-primary)]" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium">{user?.username || 'Trader'}</p>
-                    <p className="text-sm text-[var(--color-text-secondary)]">View Profile</p>
+                    <p className="font-medium">{user?.username || "Trader"}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                      View Profile
+                    </p>
                   </div>
                 </button>
 

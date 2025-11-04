@@ -66,6 +66,7 @@ export const authAPI = {
   refreshToken: (refresh) => api.post("/auth/token/refresh/", { refresh }),
   getUserInfo: () => api.get("/auth/user/"),
   googleLogin: (payload) => api.post("/auth/google/", payload),
+  updateProfile: (userData) => api.put("/auth/user/update/", userData),
 };
 
 // Blogs API
