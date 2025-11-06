@@ -400,7 +400,8 @@ const CreateEditModal = ({
                 >
                   <option value="pending">Pending</option>
                   <option value="success">Success</option>
-                  <option value="fail">Failed</option>
+                  <option value="break_even">Break Even</option>
+                  <option value="fail">Fail</option>
                 </select>
               </div>
             </div>

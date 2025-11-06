@@ -196,13 +196,15 @@ const ProductApp = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case "success":
         return "text-positive bg-[var(--color-accent1)]/20 border border-[var(--color-accent1)]/30";
-      case "fail":
-        return "text-negative bg-[var(--color-secondary)]/20 border border-[var(--color-secondary)]/30";
+      case "break_even":
+        return "text-[var(--color-accent2)] bg-[var(--color-accent2)]/20 border border-[var(--color-accent2)]/30";
       case "pending":
         return "text-[var(--color-accent2)] bg-[var(--color-accent2)]/20 border border-[var(--color-accent2)]/30";
+      case "fail":
+        return "text-negative bg-[var(--color-secondary)]/20 border border-[var(--color-secondary)]/30";
       default:
         return "text-contrast-medium bg-[var(--color-neutral-dark)]/10 border border-[var(--color-neutral-dark)]/20";
     }
