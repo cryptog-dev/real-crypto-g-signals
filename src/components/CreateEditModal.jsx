@@ -219,7 +219,7 @@ const CreateEditModal = ({
                   Access Type
                 </label>
                 <select
-                  value={formData.access_type || "free"}
+                  value={formData.access_type}
                   onChange={(e) =>
                     setFormData({ ...formData, access_type: e.target.value })
                   }

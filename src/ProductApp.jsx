@@ -105,17 +105,15 @@ const ProductApp = () => {
     setFormData({
       title: item.title || "",
       content: item.content || "",
-      image: item.image || "",
+      image: item.image || null,
       coin: item.coin || "",
       direction: item.direction || "buy",
       entry_price: item.entry_price || "",
-      leverage: item.leverage || "",
+      leverage: item.leverage || "10",
       stop_loss: item.stop_loss || "",
-      targets:
-        typeof item.targets === "string"
-          ? item.targets
-          : JSON.stringify(item.targets || {}),
+      targets: item.targets || "",
       status: item.status || "pending",
+      access_type: item.access_type || "free",
     });
     setShowCreateModal(true);
   };
