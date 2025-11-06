@@ -141,6 +141,11 @@ const getResultText = (signal) => {
       text: `${hitTargetLabels.join(", ")} Hit`,
       color: "text-[var(--color-accent1)]",
     };
+  } else if (signal.status === "break_even") {
+    return {
+      text: "Closed at Break Even",
+      color: "text-blue-500",
+    };
   } else {
     return {
       text: "Awaiting Result",
