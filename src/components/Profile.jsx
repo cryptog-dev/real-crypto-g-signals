@@ -125,12 +125,12 @@ const Profile = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="lego-card rounded-xl p-6 border border-[var(--color-border-light)] shadow-md hover:shadow-lg transition-all"
+          className="lego-card rounded-xl p-4 sm:p-6 border border-[var(--color-border-light)] shadow-md hover:shadow-lg transition-all"
         >
           {/* Top Section: Photo + Basic Info */}
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start sm:space-x-6 space-y-4 sm:space-y-0">
             {/* Profile Photo */}
-            <div className="h-20 w-20 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center overflow-hidden">
+            <div className="h-24 w-24 sm:h-20 sm:w-20 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center overflow-hidden">
               {profileData?.profilePhoto ? (
                 <img
                   src={`https://res.cloudinary.com/dnswcgxwm/${profileData.image}`}
@@ -138,22 +138,22 @@ const Profile = () => {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <User className="h-10 w-10 text-[var(--color-primary)]" />
+                <User className="h-10 w-10 sm:h-12 sm:w-12 text-[var(--color-primary)]" />
               )}
             </div>
 
             {/* Name + Username */}
-            <div className="flex-1">
+            <div className="flex-1 w-full text-center sm:text-left">
               {isEditing ? (
                 <div className="space-y-3">
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <input
                       type="text"
                       name="firstName"
                       value={editForm?.firstName || ""}
                       onChange={handleChange}
                       placeholder="First Name"
-                      className="lego-input px-3 py-2 w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                      className="lego-input px-3 py-2 w-full sm:w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                     />
                     <input
                       type="text"
@@ -161,13 +161,13 @@ const Profile = () => {
                       value={editForm?.lastName || ""}
                       onChange={handleChange}
                       placeholder="Last Name"
-                      className="lego-input px-3 py-2 w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                      className="lego-input px-3 py-2 w-full sm:w-1/2 bg-[var(--color-card-bg)] border border-[var(--color-border-light)] rounded-lg focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                     />
                   </div>
                   <p className="text-sm text-contrast-medium font-sans">
                     @{profileData?.username || "trader"}
                   </p>
-                  <p className="text-sm text-[var(--color-secondary)] font-medium">
+                  <p className="text-sm text-[var(--color-secondary)] font-medium break-all">
                     {profileData?.email}
                   </p>
                 </div>
@@ -180,7 +180,7 @@ const Profile = () => {
                   <p className="text-sm text-contrast-medium font-sans mt-1">
                     @{profileData?.username || "trader"}
                   </p>
-                  <p className="text-sm text-[var(--color-secondary)] font-medium mt-1">
+                  <p className="text-sm text-[var(--color-secondary)] font-medium mt-1 break-all">
                     {profileData?.email}
                   </p>
                 </>
@@ -211,13 +211,13 @@ const Profile = () => {
           </div>
 
           {/* Edit / Save Actions */}
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="mt-6 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className={`lego-button bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg flex items-center space-x-2 ${
+                  className={`lego-button bg-[var(--color-primary)] text-white px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 w-full sm:w-auto ${
                     saving
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-[var(--color-primary)]/90"
@@ -228,7 +228,7 @@ const Profile = () => {
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  <span>{saving ? "Saving..." : "Save"}</span>
+                  <span>{saving ? "Saving..." : "Save Changes"}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -237,7 +237,7 @@ const Profile = () => {
                     setEditForm(profileData);
                   }}
                   disabled={saving}
-                  className={`lego-button bg-[var(--color-card-bg)] border border-[var(--color-border-light)] px-4 py-2 rounded-lg flex items-center space-x-2 hover:border-[var(--color-border-hover)] ${
+                  className={`lego-button bg-[var(--color-card-bg)] border border-[var(--color-border-light)] px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 hover:border-[var(--color-border-hover)] w-full sm:w-auto ${
                     saving ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
@@ -248,7 +248,7 @@ const Profile = () => {
             ) : (
               <button
                 onClick={() => setIsEditing(true)}
-                className="lego-button bg-[var(--color-secondary)] text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                className="lego-button bg-[var(--color-secondary)] text-white px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 w-full sm:w-auto"
               >
                 <Edit3 className="h-4 w-4" />
                 <span>Edit Profile</span>
